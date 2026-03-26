@@ -215,7 +215,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("❌ Erro auto backup:", err.message);
   }
-}, 1000 * 60 * 30);
+}, 1000 * 60 * 1440);
 
 setInterval(async () => {
   try {
@@ -227,7 +227,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("❌ Erro ao enviar status do container:", err.message);
   }
-}, 1000 * 60 * 60);
+}, 1000 * 60 * 1440);
 
 client.on("messageCreate", async (message) => {
   if (!message.guild || message.author.bot) return;
