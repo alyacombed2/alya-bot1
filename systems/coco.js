@@ -18,7 +18,7 @@ module.exports = (client) => {
     "1467271978313580707",
     "1467272008193671188",
     "1478154024866943199",
-    "1479569171523043525",
+    "1479569171523043525"
   ];
 
   const STOCK_ROLE_ID = "1467271978313580707";
@@ -26,7 +26,7 @@ module.exports = (client) => {
   const SPECIAL_ROLE_ID = "1484705404385628334";
 
   client.once("ready", async () => {
-    console.log("🥥 Sistema coco carregado!");
+    console.log(`✅ Bot online como ${client.user.tag}`);
 
     client.user.setActivity("🎮・OrbitStore", {
       type: ActivityType.Playing,
@@ -47,9 +47,9 @@ module.exports = (client) => {
         { body: commands }
       );
 
-      console.log("✅ Comando /stock registrado!");
+      console.log("✅ Comando /stock registrado no servidor!");
     } catch (err) {
-      console.error("Erro ao registrar /stock:", err);
+      console.error("Erro ao registrar comando:", err);
     }
   });
 
@@ -97,13 +97,84 @@ module.exports = (client) => {
 
         const embed = new EmbedBuilder()
           .setColor("#c9a7ff")
-          .setDescription("💜 Pagamento via PIX\nChave: `miguelmarchetti4@gmail.com`")
+          .setDescription(
+`<:pix:1467502803898466529> ﹒✿゛**Pagamento via PIX** ♡ <:pix:1467502803898466529>
+
+<:mm2:1467502795526639819> **Orbit Store | MM2**
+<:seta:1467509708503126250> **Chave PIX:** \`miguelmarchetti4@gmail.com\`
+
+<:zerotwo:1467509417938260203> Após o pagamento, **envie o comprovante**
+<:coraao:1467509047782805607> Agradecemos a confiança!`
+          )
+          .setImage("https://media.discordapp.net/attachments/1376263450011107359/1467348866125795561/content.png")
           .setFooter({ text: "🎮 Orbit Store ♡" });
 
         await message.channel.send({ embeds: [embed] });
       }
+
+      if (message.content === "!processando") {
+        await message.delete().catch(() => {});
+
+        const embed = new EmbedBuilder()
+          .setColor("#ffe08a")
+          .setDescription(
+`<:morango:1467510010408997108> ﹒✿゛**Pagamento em Processamento** ♡
+
+<:mm2:1467502795526639819> **Orbit Store | MM2**
+Pagamento recebido <:zerotwo:1467509417938260203>
+Em análise pela equipe ⏳
+
+<:coraao:1467509047782805607> Aguarde alguns instantes`
+          )
+          .setImage("https://media.discordapp.net/attachments/1376263450011107359/1467348866125795561/content.png")
+          .setFooter({ text: "🎮 Orbit Store ♡" });
+
+        await message.channel.send({ embeds: [embed] });
+      }
+
+      if (message.content === "!concluido") {
+        await message.delete().catch(() => {});
+
+        const embed = new EmbedBuilder()
+          .setColor("#8affb1")
+          .setDescription(
+`<:certo:1467510357764472842> ﹒✿゛**Pagamento Concluído** ♡
+
+<:mm2:1467502795526639819> **Orbit Store | MM2**
+Pagamento confirmado 🎮
+Seu item será entregue em instantes
+
+<:coraao:1467509047782805607> Obrigado pela compra!`
+          )
+          .setImage("https://media.discordapp.net/attachments/1376263450011107359/1467348866125795561/content.png")
+          .setFooter({ text: "🎮 Orbit Store ♡" });
+
+        await message.channel.send({ embeds: [embed] });
+      }
+
+      if (message.content === "!final") {
+        await message.delete().catch(() => {});
+
+        const embed = new EmbedBuilder()
+          .setColor("#bfa7ff")
+          .setDescription(
+`<:hellokitty:1467502793651912819> ﹒✿゛**Pedido Finalizado** ♡
+
+<:mm2:1467502795526639819> **Orbit Store | MM2**
+Pedido entregue com sucesso ⭐
+
+Deixe seu feedback:
+<:seta:1467509708503126250> <#1467490270869328022>
+<:seta:1467509708503126250> <#1467267925412155575>`
+          )
+          .setImage("https://media.discordapp.net/attachments/1376263450011107359/1467348866125795561/content.png")
+          .setFooter({ text: "🎮 Orbit Store ♡" });
+
+        await message.channel.send({ embeds: [embed] });
+      }
+
     } catch (err) {
-      console.error("Erro no comando !pix:", err);
+      console.error("Erro:", err);
     }
   });
 
@@ -113,7 +184,7 @@ module.exports = (client) => {
 
       if (!member.roles.cache.has(STOCK_ROLE_ID)) {
         return interaction.reply({
-          content: "❌ Sem permissão",
+          content: "❌ Você não tem permissão.",
           ephemeral: true,
         });
       }
@@ -125,7 +196,8 @@ module.exports = (client) => {
       const input = new TextInputBuilder()
         .setCustomId("stock_text")
         .setLabel("Digite o stock")
-        .setStyle(TextInputStyle.Paragraph);
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true);
 
       modal.addComponents(
         new ActionRowBuilder().addComponents(input)
@@ -142,13 +214,14 @@ module.exports = (client) => {
 
       const embed = new EmbedBuilder()
         .setColor("#c9a7ff")
-        .setTitle("📦 Stock Atualizado")
-        .setDescription(stock);
+        .setTitle("📦 Stock Atualizado <:hellokitty:1467502793651912819>")
+        .setDescription(stock)
+        .setFooter({ text: "🎮 Orbit Store ♡" });
 
       await interaction.channel.send({ embeds: [embed] });
 
       await interaction.reply({
-        content: "✅ Enviado",
+        content: "✅ Stock enviado!",
         ephemeral: true,
       });
     }
