@@ -8,18 +8,12 @@ module.exports = (client) => {
   "ping", "gay", "corno", "feio", "rico", "suspeito", "ship",
   "beijar", "tapa", "abraçar", "abracar", "morder", "casar",
   "divorcio", "divórcio", "roleta", "8ball", "quem",
-
   "saldo", "money", "daily", "work", "trabalhar", "crime",
   "apostar", "assaltar",
-
   "loja", "comprar", "inventario", "inv", "usar",
-
   "perfil", "rankmoney", "ranklevel", "rankmsg",
-
   "ppt", "caraoucoroa", "dado", "adivinhe",
-
   "fakeban", "fakemute", "fakekick", "prisao", "prisão", "cancelar",
-
   "evento", "ajuda", "help"
 ];
 
@@ -87,35 +81,36 @@ module.exports = (client) => {
     console.log("🎉 Sistema de diversão carregado!");
   });
 
-  client.on("messageCreate", async (message) => {
+ client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.guild) return;
 
- 
-const BLOCKED_CHANNEL_ID = "1476321406647275571";
+  const BLOCK_ALL_COMMANDS_CHANNEL_ID = "1476321406647275571";
+  let cmdCheck = "";
 
-const argsCheck = message.content.slice(PREFIX.length).trim().split(/ +/);
-const cmdCheck = argsCheck[0]?.toLowerCase();
+  if (message.content.startsWith(PREFIX)) {
+    const argsCheck = message.content.slice(PREFIX.length).trim().split(/ +/);
+    cmdCheck = argsCheck[0]?.toLowerCase();
+  }
 
-if (message.channel.id === COMMAND_CHANNEL_ID) {
-  if (!message.content.startsWith(PREFIX)) {
+  if (message.channel.id === COMMAND_CHANNEL_ID) {
+    if (!message.content.startsWith(PREFIX)) {
+      await message.delete().catch(() => {});
+      return;
+    }
+
+    if (!ALLOWED_COMMANDS.includes(cmdCheck)) {
+      await message.delete().catch(() => {});
+      return;
+    }
+  }
+
+  if (
+    message.channel.id === BLOCK_ALL_COMMANDS_CHANNEL_ID &&
+    message.content.startsWith(PREFIX)
+  ) {
     await message.delete().catch(() => {});
     return;
   }
-
-  if (!ALLOWED_COMMANDS.includes(cmdCheck)) {
-    await message.delete().catch(() => {});
-    return;
-  }
-}
-
-if (
-  message.channel.id === BLOCKED_CHANNEL_ID &&
-  message.content.startsWith(PREFIX) &&
-  ALLOWED_COMMANDS.includes(cmdCheck)
-) {
-  await message.delete().catch(() => {});
-  return;
-}
 
   const user = getUser(message.author.id);
   user.messages += 1;
