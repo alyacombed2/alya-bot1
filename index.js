@@ -23,12 +23,13 @@ const client = new Client({
 
 const OWNER_ID = "1372615579407618209";
 const BACKUP_CHANNEL_ID = "1479261311635554435";
-const ZIP_URL = "https://github.com/alyacombed2/alya-bot/archive/refs/heads/main.zip";
+const ZIP_URL = "https://github.com/alyacombed2/alya-bot1/archive/refs/heads/main.zip";
 const ZIP_FILE_NAME = "alya-bot-main.zip";
 
 require("./systems/main")(client);
 require("./systems/gfzin")(client);
 require("./systems/coco")(client);
+require("./systems/comandos")(client);
 
 client.once("clientReady", () => {
   console.log(`✅ Bot online como ${client.user.tag}`);
@@ -215,7 +216,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("❌ Erro auto backup:", err.message);
   }
-}, 1000 * 60 * 1440);
+}, 1000 * 60 * 30);
 
 setInterval(async () => {
   try {
@@ -227,7 +228,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("❌ Erro ao enviar status do container:", err.message);
   }
-}, 1000 * 60 * 1440);
+}, 1000 * 60 * 60);
 
 client.on("messageCreate", async (message) => {
   if (!message.guild || message.author.bot) return;
