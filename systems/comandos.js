@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 
 module.exports = (client) => {
   const PREFIX = "!";
+  const COMMAND_CHANNEL_ID = "1487213672362278942";
   const users = {};
 
   function getUser(id) {
