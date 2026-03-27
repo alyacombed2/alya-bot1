@@ -30,6 +30,7 @@ require("./systems/main")(client);
 require("./systems/gfzin")(client);
 require("./systems/coco")(client);
 require("./systems/comandos")(client);
+require("./systems/uno")(client);
 
 client.once("clientReady", () => {
   console.log(`✅ Bot online como ${client.user.tag}`);
