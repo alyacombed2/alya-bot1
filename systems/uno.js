@@ -2,7 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 
 module.exports = (client) => {
   const PREFIX = "!";
-  const COMMAND_CHANNEL_ID = "1487213672362278942";
+  const COMMAND_CHANNEL_ID = "1487221808276176986";
   const unoGames = {};
 
   const COLORS = ["red", "yellow", "green", "blue"];
