@@ -4,6 +4,24 @@ module.exports = (client) => {
   const PREFIX = "!";
   const COMMAND_CHANNEL_ID = "1487213672362278942";
   const users = {};
+  const ALLOWED_COMMANDS = [
+  "ping", "gay", "corno", "feio", "rico", "suspeito", "ship",
+  "beijar", "tapa", "abraçar", "abracar", "morder", "casar",
+  "divorcio", "divórcio", "roleta", "8ball", "quem",
+
+  "saldo", "money", "daily", "work", "trabalhar", "crime",
+  "apostar", "assaltar",
+
+  "loja", "comprar", "inventario", "inv", "usar",
+
+  "perfil", "rankmoney", "ranklevel", "rankmsg",
+
+  "ppt", "caraoucoroa", "dado", "adivinhe",
+
+  "fakeban", "fakemute", "fakekick", "prisao", "prisão", "cancelar",
+
+  "evento", "ajuda", "help"
+];
 
   function getUser(id) {
     if (!users[id]) {
@@ -73,22 +91,31 @@ module.exports = (client) => {
   if (message.author.bot || !message.guild) return;
 
  
-  if (
-    message.content.startsWith(PREFIX) &&
-    message.channel.id !== COMMAND_CHANNEL_ID
-  ) {
+const BLOCKED_CHANNEL_ID = "1476321406647275571";
+
+const argsCheck = message.content.slice(PREFIX.length).trim().split(/ +/);
+const cmdCheck = argsCheck[0]?.toLowerCase();
+
+if (message.channel.id === COMMAND_CHANNEL_ID) {
+  if (!message.content.startsWith(PREFIX)) {
     await message.delete().catch(() => {});
     return;
   }
 
-  
-  if (
-    message.channel.id === COMMAND_CHANNEL_ID &&
-    !message.content.startsWith(PREFIX)
-  ) {
+  if (!ALLOWED_COMMANDS.includes(cmdCheck)) {
     await message.delete().catch(() => {});
     return;
   }
+}
+
+if (
+  message.channel.id === BLOCKED_CHANNEL_ID &&
+  message.content.startsWith(PREFIX) &&
+  ALLOWED_COMMANDS.includes(cmdCheck)
+) {
+  await message.delete().catch(() => {});
+  return;
+}
 
   const user = getUser(message.author.id);
   user.messages += 1;
