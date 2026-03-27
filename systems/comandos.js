@@ -69,14 +69,32 @@ module.exports = (client) => {
   });
 
   client.on("messageCreate", async (message) => {
-    if (message.author.bot || !message.guild) return;
+  if (message.author.bot || !message.guild) return;
 
-    const user = getUser(message.author.id);
-    user.messages += 1;
+ 
+  if (
+    message.content.startsWith(PREFIX) &&
+    message.channel.id !== COMMAND_CHANNEL_ID
+  ) {
+    await message.delete().catch(() => {});
+    return;
+  }
 
-    const levelUp = addXP(message.author.id, randomMoney(8, 15));
-    if (levelUp) {
-      message.channel.send({
+  
+  if (
+    message.channel.id === COMMAND_CHANNEL_ID &&
+    !message.content.startsWith(PREFIX)
+  ) {
+    await message.delete().catch(() => {});
+    return;
+  }
+
+  const user = getUser(message.author.id);
+  user.messages += 1;
+
+  const levelUp = addXP(message.author.id, randomMoney(8, 15));
+  if (levelUp) {
+    message.channel.send({
         embeds: [
           createEmbed(
             "⬆️ LEVEL UP!",
@@ -89,7 +107,7 @@ module.exports = (client) => {
 
     const txt = message.content.toLowerCase();
 
-    // respostas automáticas
+    
     if (txt.includes("bora call")) {
       message.reply("🎙️ bora então, arregão");
     }
@@ -117,9 +135,7 @@ module.exports = (client) => {
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = args.shift().toLowerCase();
 
-    // =========================
-    // DIVERSÃO / ZOEIRA
-    // =========================
+    
 
     if (cmd === "ping") {
       return message.reply("🏓 Pong!");
@@ -245,9 +261,7 @@ module.exports = (client) => {
       return message.reply(`🎯 Eu escolho: **${escolhido.username}**`);
     }
 
-    // =========================
-    // ECONOMIA
-    // =========================
+    
 
     if (cmd === "saldo" || cmd === "money") {
       return message.reply(`💰 ${message.author}, você tem **${user.money} moedas**.`);
@@ -341,9 +355,7 @@ module.exports = (client) => {
       }
     }
 
-    // =========================
-    // LOJA / INVENTÁRIO
-    // =========================
+   
 
     if (cmd === "loja") {
       const itens = Object.entries(loja)
@@ -417,9 +429,7 @@ module.exports = (client) => {
       return message.reply(`✨ Você usou **${item}**.`);
     }
 
-    // =========================
-    // PERFIL / RANK
-    // =========================
+    
 
     if (cmd === "perfil") {
       const alvo = message.mentions.users.first() || message.author;
@@ -500,9 +510,7 @@ module.exports = (client) => {
       });
     }
 
-    // =========================
-    // MINIGAMES
-    // =========================
+    
 
     if (cmd === "ppt") {
       const escolha = args[0]?.toLowerCase();
@@ -566,9 +574,7 @@ module.exports = (client) => {
       }
     }
 
-    // =========================
-    // FAKE MODERAÇÃO
-    // =========================
+    
 
     if (cmd === "fakeban") {
       const alvo = message.mentions.users.first();
@@ -629,9 +635,7 @@ module.exports = (client) => {
       return message.reply(`📉 ${alvo} foi oficialmente cancelado pela internet.`);
     }
 
-    // =========================
-    // EVENTO / AJUDA
-    // =========================
+    
 
     if (cmd === "evento") {
       const eventos = [
