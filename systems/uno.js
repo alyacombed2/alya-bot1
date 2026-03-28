@@ -119,6 +119,8 @@ module.exports = (client) => {
   }
 
   async function sendHand(user, game) {
+    if (!user) return;
+
     const hand = game.hands[user.id] || [];
     const desc = hand.length
       ? hand.map((c, i) => `**${i + 1}.** ${cardText(c)}`).join("\n")
@@ -208,6 +210,40 @@ module.exports = (client) => {
     await announceTurn(channel, game);
   }
 
+  function helpEmbed() {
+    return new EmbedBuilder()
+      .setColor("Purple")
+      .setTitle("🃏 Central de Comandos do UNO")
+      .setDescription(
+        [
+          "**🎮 Salas**",
+          "`!uno criar [nome]` → Cria uma sala",
+          "`!uno entrar [nome]` → Entra em uma sala",
+          "`!uno sair` → Sai da sala antes do jogo começar",
+          "`!uno iniciar [nome]` → Inicia a partida",
+          "`!uno status` → Mostra o status da partida",
+          "`!uno cancelar` → Cancela a sala (apenas dono)",
+          "",
+          "**🃏 Jogo**",
+          "`!uno mao` → Recebe suas cartas no PV",
+          "`!uno mão` → Mesmo comando acima",
+          "`!uno jogar <número>` → Joga uma carta normal",
+          "`!uno jogar <número> <cor>` → Joga coringa ou +4",
+          "`!uno comprar` → Compra 1 carta",
+          "`!uno falar` → Grita UNO quando estiver com 1 carta",
+          "`!uno denunciar @user` → Denuncia quem esqueceu UNO",
+          "",
+          "**🎨 Cores válidas para coringa**",
+          "`azul`, `vermelho`, `verde`, `amarelo`",
+          "`blue`, `red`, `green`, `yellow`",
+          "",
+          "**📌 Exemplo**",
+          "`!uno jogar 3 azul`"
+        ].join("\n")
+      )
+      .setFooter({ text: "OrbitStore • Sistema UNO" });
+  }
+
   client.once("clientReady", () => {
     console.log("🃏 Sistema UNO carregado!");
   });
@@ -227,6 +263,12 @@ module.exports = (client) => {
 
     const args = message.content.trim().split(/ +/).slice(1);
     const sub = (args.shift() || "").toLowerCase();
+
+    if (sub === "help" || sub === "ajuda" || sub === "comandos") {
+      return message.channel.send({
+        embeds: [helpEmbed()]
+      });
+    }
 
     if (sub === "criar") {
       const room = (args[0] || `sala-${Math.floor(Math.random() * 9999)}`).toLowerCase();
@@ -309,7 +351,7 @@ module.exports = (client) => {
         game.players.map(async (id, i) => {
           const user = await client.users.fetch(id).catch(() => null);
           const handCount = game.hands[id]?.length ?? 0;
-          const turnMark = getCurrentPlayer(game) === id ? " ← 🎯" : "";
+          const turnMark = game.started && getCurrentPlayer(game) === id ? " ← 🎯" : "";
           return `**${i + 1}.** ${user ? user.username : "Usuário"} — ${handCount} cartas${turnMark}`;
         })
       );
@@ -402,15 +444,15 @@ module.exports = (client) => {
       if (!card) return message.reply("❌ Carta inválida.");
       if (!canPlay(card, game)) return message.reply("❌ Você não pode jogar essa carta agora.");
 
-      if (card.color === "wild" && !COLORS.includes(chosenColor)) {
-        return message.reply("❌ Você precisa escolher uma cor: `vermelho`, `amarelo`, `verde`, `azul` ou `red/yellow/green/blue`.");
-      }
-
       let finalColor = chosenColor;
       if (chosenColor === "vermelho") finalColor = "red";
       if (chosenColor === "amarelo") finalColor = "yellow";
       if (chosenColor === "verde") finalColor = "green";
       if (chosenColor === "azul") finalColor = "blue";
+
+      if (card.color === "wild" && !COLORS.includes(finalColor)) {
+        return message.reply("❌ Você precisa escolher uma cor: `vermelho`, `amarelo`, `verde`, `azul` ou `red/yellow/green/blue`.");
+      }
 
       hand.splice(index - 1, 1);
       game.discard.push(card);
@@ -420,7 +462,7 @@ module.exports = (client) => {
 
       await message.channel.send(`🃏 ${message.author} jogou **${cardText(card)}**${card.color === "wild" ? ` e escolheu **${COLOR_EMOJIS[finalColor]} ${finalColor}**` : ""}!`);
 
-      if (hand.length === 1 && !game.unoCalled[message.author.id]) {
+      if (hand.length === 1) {
         await message.channel.send(`⚠️ ${message.author} está com **1 carta**! Se ele não falar UNO, pode ser denunciado.`);
       }
 
@@ -441,19 +483,22 @@ module.exports = (client) => {
       if (card.value === "skip") {
         nextTurn(game, 2);
         await updateAllHands(game);
-        return message.channel.send(`⏭️ Próximo jogador foi pulado!`).then(() => announceTurn(message.channel, game));
+        await message.channel.send(`⏭️ Próximo jogador foi pulado!`);
+        return announceTurn(message.channel, game);
       }
 
       if (card.value === "reverse") {
         if (game.players.length === 2) {
           nextTurn(game, 2);
           await updateAllHands(game);
-          return message.channel.send(`🔄 Reverso em 2 jogadores funciona como pular!`).then(() => announceTurn(message.channel, game));
+          await message.channel.send(`🔄 Reverso em 2 jogadores funciona como pular!`);
+          return announceTurn(message.channel, game);
         } else {
           game.direction *= -1;
           nextTurn(game);
           await updateAllHands(game);
-          return message.channel.send(`🔄 A direção do jogo foi invertida!`).then(() => announceTurn(message.channel, game));
+          await message.channel.send(`🔄 A direção do jogo foi invertida!`);
+          return announceTurn(message.channel, game);
         }
       }
 
@@ -461,7 +506,8 @@ module.exports = (client) => {
         nextTurn(game);
         const target = getCurrentPlayer(game);
         drawCards(game, target, 2);
-        await sendHand(await client.users.fetch(target).catch(() => null), game);
+        const targetUser = await client.users.fetch(target).catch(() => null);
+        await sendHand(targetUser, game);
         await message.channel.send(`📥 <@${target}> comprou **2 cartas** e perdeu a vez!`);
         nextTurn(game);
         await updateAllHands(game);
@@ -472,7 +518,8 @@ module.exports = (client) => {
         nextTurn(game);
         const target = getCurrentPlayer(game);
         drawCards(game, target, 4);
-        await sendHand(await client.users.fetch(target).catch(() => null), game);
+        const targetUser = await client.users.fetch(target).catch(() => null);
+        await sendHand(targetUser, game);
         await message.channel.send(`💀 <@${target}> comprou **4 cartas** e perdeu a vez!`);
         nextTurn(game);
         await updateAllHands(game);
@@ -495,8 +542,8 @@ module.exports = (client) => {
       return message.channel.send(`🗑️ A sala **${room}** foi cancelada.`);
     }
 
-    return message.reply(
-      `❌ Comando inválido.\n\n**Comandos UNO:**\n\`!uno criar [nome]\`\n\`!uno entrar [nome]\`\n\`!uno sair\`\n\`!uno iniciar [nome]\`\n\`!uno status\`\n\`!uno mao\`\n\`!uno jogar <número> [cor]\`\n\`!uno comprar\`\n\`!uno falar\`\n\`!uno denunciar @user\`\n\`!uno cancelar\``
-    );
+    return message.channel.send({
+      embeds: [helpEmbed()]
+    });
   });
 };
