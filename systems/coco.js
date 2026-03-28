@@ -46,7 +46,6 @@ module.exports = (client) => {
         Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
         { body: commands }
       );
-
       console.log("✅ Comando /stock registrado no servidor!");
     } catch (err) {
       console.error("Erro ao registrar comando:", err);
@@ -66,19 +65,15 @@ module.exports = (client) => {
     if (message.content === "!remover" || message.content === "!adicionar") {
       try {
         await message.delete().catch(() => {});
-
         const targetUser = await message.guild.members.fetch(USER_ID).catch(() => null);
         const specialRole = message.guild.roles.cache.get(SPECIAL_ROLE_ID);
-
         if (!targetUser || !specialRole) return;
 
         if (message.content === "!remover") {
           if (targetUser.roles.cache.has(SPECIAL_ROLE_ID)) {
             await targetUser.roles.remove(SPECIAL_ROLE_ID).catch(() => {});
           }
-        }
-
-        if (message.content === "!adicionar") {
+        } else if (message.content === "!adicionar") {
           if (!targetUser.roles.cache.has(SPECIAL_ROLE_ID)) {
             await targetUser.roles.add(SPECIAL_ROLE_ID).catch(() => {});
           }
@@ -94,7 +89,6 @@ module.exports = (client) => {
     try {
       if (message.content === "!pix") {
         await message.delete().catch(() => {});
-
         const embed = new EmbedBuilder()
           .setColor("#c9a7ff")
           .setDescription(
@@ -110,11 +104,8 @@ module.exports = (client) => {
           .setFooter({ text: "🎮 Orbit Store ♡" });
 
         await message.channel.send({ embeds: [embed] });
-      }
-
-      if (message.content === "!processando") {
+      } else if (message.content === "!processando") {
         await message.delete().catch(() => {});
-
         const embed = new EmbedBuilder()
           .setColor("#ffe08a")
           .setDescription(
@@ -130,11 +121,8 @@ Em análise pela equipe ⏳
           .setFooter({ text: "🎮 Orbit Store ♡" });
 
         await message.channel.send({ embeds: [embed] });
-      }
-
-      if (message.content === "!concluido") {
+      } else if (message.content === "!concluido") {
         await message.delete().catch(() => {});
-
         const embed = new EmbedBuilder()
           .setColor("#8affb1")
           .setDescription(
@@ -150,11 +138,8 @@ Seu item será entregue em instantes
           .setFooter({ text: "🎮 Orbit Store ♡" });
 
         await message.channel.send({ embeds: [embed] });
-      }
-
-      if (message.content === "!final") {
+      } else if (message.content === "!final") {
         await message.delete().catch(() => {});
-
         const embed = new EmbedBuilder()
           .setColor("#bfa7ff")
           .setDescription(
@@ -172,7 +157,6 @@ Deixe seu feedback:
 
         await message.channel.send({ embeds: [embed] });
       }
-
     } catch (err) {
       console.error("Erro:", err);
     }
