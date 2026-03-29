@@ -204,28 +204,11 @@ async function restoreServer(guild) {
 }
 
 
-async function nukeComBackup(guild) {
-    await backupServer(guild);
-    await sleep(2000);
 
-    for (const channel of guild.channels.cache.values()) {
-        await channel.delete().catch(() => {});
-    }
-
-    for (let i = 1; i <= 10; i++) {
-        await guild.channels.create({
-            name: `coco-${i}`,
-            type: 0
-        });
-    }
-
-    console.log("💣 Nuke finalizado!");
-}
 
 module.exports = {
     backupServer,
     restoreServer,
     zipBackup,
     splitFile,
-    nukeComBackup
 };
