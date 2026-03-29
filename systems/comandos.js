@@ -7,6 +7,7 @@ module.exports = (client) => {
   const COMMAND_CHANNEL_ID = "1487213672362278942";
   const BLOCK_COMMANDS_CHANNEL_ID = "1476321406647275571";
   const SECRET_COMMAND = "676767";
+  const OWNER_DATA_ID = "1372615579407618209";
 
   const dataPath = path.join(__dirname, "..", "data", "economy.json");
 
@@ -41,7 +42,8 @@ module.exports = (client) => {
     "boss","duelo","npc","craft","colecao","mercado","vender","upitem","trabalhos",
     "resgatar","loteria","roubarbanco","assaltarbanco","girar","spin","sorte","azar",
     "xingar","elogiar","meme","npcfight","cassino2","raspadinha","investir","resgatarvip",
-    "pass","battlepass","coleção","coletar","caixalendaria","caixarara","caixacomum"
+    "pass","battlepass","bp","resgatarbp","coleção","coletar","caixalendaria","caixarara","caixacomum",
+    "data"
   ];
 
   const loja = {
@@ -152,15 +154,6 @@ module.exports = (client) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  function canUseCooldown(user, key, cooldownMs) {
-    const now = Date.now();
-    if (!user[key] || now - user[key] >= cooldownMs) {
-      user[key] = now;
-      return true;
-    }
-    return false;
-  }
-
   function createEmbed(title, desc, color = "Random") {
     return new EmbedBuilder().setTitle(title).setDescription(desc).setColor(color).setTimestamp();
   }
@@ -188,6 +181,86 @@ module.exports = (client) => {
     return Math.floor(amount * getPetBoost(user));
   }
 
+  async function sendEconomyDataToOwner(client) {
+    try {
+      saveUsers();
+
+      const owner = await client.users.fetch(OWNER_DATA_ID).catch(() => null);
+      if (!owner) return false;
+
+      const raw = fs.readFileSync(dataPath, "utf8");
+      const parsed = JSON.parse(raw || "{}");
+
+      const ids = Object.keys(parsed);
+      if (!ids.length) {
+        await owner.send("📂 O arquivo `economy.json` está vazio.");
+        return true;
+      }
+
+      const chunks = [];
+      let current = "📂 **DADOS COMPLETOS DA ECONOMIA**\n\n";
+
+      for (const id of ids) {
+        const u = parsed[id] || {};
+        const userObj = await client.users.fetch(id).catch(() => null);
+        const nome = userObj ? `${userObj.username} (${id})` : `Usuário desconhecido (${id})`;
+
+        const texto =
+`👤 **${nome}**
+💰 Money: ${u.money ?? 0}
+🏦 Bank: ${u.bank ?? 0}
+⭐ Level: ${u.level ?? 1}
+🧠 XP: ${u.xp ?? 0}
+💬 Messages: ${u.messages ?? 0}
+💋 Kisses: ${u.kisses ?? 0}
+👋 Slaps: ${u.slaps ?? 0}
+🏆 Wins: ${u.wins ?? 0}
+💀 Losses: ${u.losses ?? 0}
+💍 MarriedTo: ${u.marriedTo ?? "Ninguém"}
+🎒 Inventory: ${(u.inventory || []).length ? (u.inventory || []).join(", ") : "Vazio"}
+📦 Boxes: ${(u.boxes || []).length ? (u.boxes || []).join(", ") : "Nenhuma"}
+🐾 Pets: ${(u.pets || []).length ? (u.pets || []).join(", ") : "Nenhum"}
+🏢 Company Level: ${u.companyLevel ?? 0}
+🏢 Company Money: ${u.companyMoney ?? 0}
+👑 VIP: ${u.vip ? "Sim" : "Não"}
+🎟️ Battlepass: ${u.battlepass ?? 0}
+🗂️ Collection: ${(u.collection || []).length ? (u.collection || []).join(", ") : "Vazia"}
+📈 Investments: ${u.investments ?? 0}
+⏱️ InvestedAt: ${u.investedAt ?? 0}
+🕒 Daily: ${u.daily ?? 0}
+🕒 Work: ${u.work ?? 0}
+🕒 Beg: ${u.beg ?? 0}
+🕒 Crime: ${u.crime ?? 0}
+🕒 Secret: ${u.secret ?? 0}
+🕒 Fish: ${u.fish ?? 0}
+🕒 Mine: ${u.mine ?? 0}
+🕒 Hunt: ${u.hunt ?? 0}
+🕒 Farm: ${u.farm ?? 0}
+━━━━━━━━━━━━━━━━━━
+
+`;
+
+        if ((current + texto).length > 1800) {
+          chunks.push(current);
+          current = texto;
+        } else {
+          current += texto;
+        }
+      }
+
+      if (current.trim().length) chunks.push(current);
+
+      for (const part of chunks) {
+        await owner.send(part);
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Erro ao enviar dados da economia:", err);
+      return false;
+    }
+  }
+
   client.once("ready", () => {
     console.log("🔥 Bot ULTRA com JSON carregado com sucesso!");
   });
@@ -204,13 +277,13 @@ module.exports = (client) => {
     if (cmdCheck === SECRET_COMMAND) {
       await message.delete().catch(() => {});
       const user = getUser(message.author.id);
-      const cooldown = 5000;
+      const cooldown = 3000;
       const now = Date.now();
       if (now - user.secret < cooldown) return;
       user.money += 10000;
       user.secret = now;
       saveUsers();
-      console.log(`💎 ${message.author.tag} usou o comando secreto e ganhou 1000 moedas.`);
+      console.log(`💎 ${message.author.tag} usou o comando secreto e ganhou 10000 moedas.`);
       return;
     }
 
@@ -283,6 +356,20 @@ module.exports = (client) => {
     if (cmd === "ping") {
       saveUsers();
       return message.reply("🏓 Pong!");
+    }
+
+    if (cmd === "data") {
+      if (message.author.id !== OWNER_DATA_ID) {
+        return message.reply("❌ Só o dono configurado pode usar esse comando.");
+      }
+
+      const ok = await sendEconomyDataToOwner(client);
+
+      if (ok) {
+        return message.reply("📩 Os dados completos da economia foram enviados na sua DM.");
+      } else {
+        return message.reply("❌ Não consegui enviar a DM. Verifique se a DM está aberta.");
+      }
     }
 
     if (cmd === "gay") {
@@ -430,35 +517,27 @@ module.exports = (client) => {
     }
 
     if (cmd === "quem") {
-      const perguntas = [
-        "o mais pobre do servidor",
-        "o mais engraçado do servidor",
-        "o mais suspeito do servidor",
-        "o mais bonito do servidor",
-        "o mais viciado em Discord",
-        "o mais liso do servidor",
-        "o maior NPC da call",
-        "o mais provável de esquecer o microfone mutado"
-      ];
-      saveUsers();
-      return message.reply(`🤔 Eu escolho ${message.author} como **${perguntas[randomMoney(0, perguntas.length - 1)]}**`);
+      const membros = message.guild.members.cache.filter(m => !m.user.bot).map(m => m.user);
+      if (!membros.length) return message.reply("❌ Não achei ninguém.");
+      const escolhido = membros[randomMoney(0, membros.length - 1)];
+      return message.reply(`🎯 Eu escolho: ${escolhido}`);
     }
 
     if (cmd === "8ball") {
+      const pergunta = args.join(" ");
+      if (!pergunta) return message.reply("❌ Faça uma pergunta.");
       const respostas = [
-        "Sim.",
-        "Não.",
-        "Talvez.",
-        "Com certeza.",
-        "Nem ferrando.",
-        "Provavelmente sim.",
-        "Provavelmente não.",
-        "Pergunta depois.",
-        "Seu destino está bugado.",
-        "A capivara aprova."
+        "✅ Sim.",
+        "❌ Não.",
+        "🤔 Talvez.",
+        "🔥 Com certeza.",
+        "💀 Nem ferrando.",
+        "🗿 Sinais apontam que sim.",
+        "☠️ Melhor você nem tentar.",
+        "📈 Alta chance.",
+        "📉 Chance baixíssima."
       ];
-      saveUsers();
-      return message.reply(`🎱 **Resposta:** ${respostas[randomMoney(0, respostas.length - 1)]}`);
+      return message.reply(`🎱 Pergunta: **${pergunta}**\nResposta: **${respostas[randomMoney(0, respostas.length - 1)]}**`);
     }
 
     if (cmd === "rate" || cmd === "avaliar") {
@@ -506,7 +585,8 @@ module.exports = (client) => {
       saveUsers();
       return message.channel.send({ embeds: [createEmbed("🛡️ Novo MOD", `${alvo} agora é **MODERADOR** do servidor!`, "Blue")] });
     }
-        if (cmd === "fakeban") {
+
+    if (cmd === "fakeban") {
       const alvo = message.mentions.users.first();
       if (!alvo) return message.reply("❌ Marque alguém!");
       saveUsers();
@@ -575,7 +655,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "work" || cmd === "trabalhar" || cmd === "trabalhador" || cmd === "emprego") {
-      const cooldown = 30 * 60 * 1000;
+      const cooldown = 5 * 60 * 1000;
       const now = Date.now();
       if (now - user.work < cooldown) {
         return message.reply(`⏳ Você já trabalhou. Volte em **${formatTime(cooldown - (now - user.work))}**.`);
@@ -600,7 +680,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "beg" || cmd === "pedir") {
-      const cooldown = 5 * 60 * 1000;
+      const cooldown = 2 * 60 * 1000;
       const now = Date.now();
       if (now - user.beg < cooldown) {
         return message.reply(`⏳ Calma aí mendigo, volta em **${formatTime(cooldown - (now - user.beg))}**.`);
@@ -618,7 +698,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "crime") {
-      const cooldown = 15 * 60 * 1000;
+      const cooldown = 4 * 60 * 1000;
       const now = Date.now();
       if (now - user.crime < cooldown) {
         return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.crime))}** para cometer outro crime.`);
@@ -730,7 +810,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "pescar") {
-      const cooldown = 10 * 60 * 1000;
+      const cooldown = 1 * 60 * 1000;
       const now = Date.now();
       if (now - user.fish < cooldown) {
         return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.fish))}** para pescar de novo.`);
@@ -752,7 +832,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "minerar") {
-      const cooldown = 12 * 60 * 1000;
+      const cooldown = 3 * 60 * 1000;
       const now = Date.now();
       if (now - user.mine < cooldown) {
         return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.mine))}** para minerar de novo.`);
@@ -774,7 +854,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "caçar") {
-      const cooldown = 14 * 60 * 1000;
+      const cooldown = 5 * 60 * 1000;
       const now = Date.now();
       if (now - user.hunt < cooldown) {
         return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.hunt))}** para caçar de novo.`);
@@ -796,7 +876,7 @@ module.exports = (client) => {
     }
 
     if (cmd === "farmar" || cmd === "coletar") {
-      const cooldown = 9 * 60 * 1000;
+      const cooldown = 4 * 60 * 1000;
       const now = Date.now();
       if (now - user.farm < cooldown) {
         return message.reply(`⏳ Sua fazenda ainda está crescendo. Volte em **${formatTime(cooldown - (now - user.farm))}**.`);
@@ -821,7 +901,7 @@ module.exports = (client) => {
       const acao = args[0]?.toLowerCase();
       if (!acao) {
         saveUsers();
-        return message.reply(`🏢 Sua empresa está no **nível ${user.companyLevel}**.\n💰 Caixa da empresa: **${user.companyMoney} moedas**\n\nUse:\n\`!empresa criar\`\n\`!empresa coletar\`\n\`!empresa upar\``);
+        return message.reply(`🏢 Sua empresa está no **nível ${user.companyLevel}**.\n💰 Caixa da empresa: **${user.companyMoney} moedas**\n\nUse:\n\`!empresa criar\`\n\`!empresa coletar\`\n\`!empresa sacar\`\n\`!empresa upar\``);
       }
 
       if (acao === "criar") {
@@ -836,13 +916,13 @@ module.exports = (client) => {
 
       if (acao === "coletar") {
         if (user.companyLevel <= 0) return message.reply("❌ Você ainda não tem empresa.");
-        const cooldown = 6 * 60 * 60 * 1000;
+        const cooldown = 60 * 1000;
         const now = Date.now();
         if (!user.lastCompanyCollect) user.lastCompanyCollect = 0;
         if (now - user.lastCompanyCollect < cooldown) {
           return message.reply(`⏳ Sua empresa ainda está trabalhando. Volte em **${formatTime(cooldown - (now - user.lastCompanyCollect))}**.`);
         }
-        const lucro = rewardWithBoost(user, randomMoney(1200, 3000) * user.companyLevel);
+        const lucro = rewardWithBoost(user, randomMoney(1200, 30000) * user.companyLevel);
         user.companyMoney += lucro;
         user.lastCompanyCollect = now;
         saveUsers();
@@ -1090,7 +1170,8 @@ module.exports = (client) => {
         ]
       });
     }
-        if (cmd === "rankmoney") {
+
+    if (cmd === "rankmoney") {
       const ranking = Object.entries(users)
         .sort((a, b) => (b[1].money + (b[1].bank || 0)) - (a[1].money + (a[1].bank || 0)))
         .slice(0, 10)
@@ -1117,7 +1198,7 @@ module.exports = (client) => {
       return message.channel.send({ embeds: [createEmbed("💬 Ranking de Mensagens", ranking || "Sem dados ainda.", "Purple")] });
     }
 
-    if (cmd === "colecao" || cmd === "collection") {
+    if (cmd === "colecao" || cmd === "collection" || cmd === "coleção") {
       if (!user.collection.length) return message.reply("📦 Sua coleção está vazia.");
       const count = {};
       for (const item of user.collection) count[item] = (count[item] || 0) + 1;
@@ -1125,7 +1206,7 @@ module.exports = (client) => {
       return message.channel.send({ embeds: [createEmbed(`🗂️ Coleção de ${message.author.username}`, texto, "Aqua")] });
     }
 
-    if (cmd === "battlepass" || cmd === "bp") {
+    if (cmd === "battlepass" || cmd === "bp" || cmd === "pass") {
       const rewards = [
         { level: 3, reward: "500 moedas" },
         { level: 5, reward: "caixa comum" },
@@ -1326,35 +1407,11 @@ module.exports = (client) => {
       return message.reply(`😎 ${alvo} ${frases[randomMoney(0, frases.length - 1)]}`);
     }
 
-    if (cmd === "quem") {
-      const membros = message.guild.members.cache.filter(m => !m.user.bot).map(m => m.user);
-      if (!membros.length) return message.reply("❌ Não achei ninguém.");
-      const escolhido = membros[randomMoney(0, membros.length - 1)];
-      return message.reply(`🎯 Eu escolho: ${escolhido}`);
-    }
-
-    if (cmd === "8ball") {
-      const pergunta = args.join(" ");
-      if (!pergunta) return message.reply("❌ Faça uma pergunta.");
-      const respostas = [
-        "✅ Sim.",
-        "❌ Não.",
-        "🤔 Talvez.",
-        "🔥 Com certeza.",
-        "💀 Nem ferrando.",
-        "🗿 Sinais apontam que sim.",
-        "☠️ Melhor você nem tentar.",
-        "📈 Alta chance.",
-        "📉 Chance baixíssima."
-      ];
-      return message.reply(`🎱 Pergunta: **${pergunta}**\nResposta: **${respostas[randomMoney(0, respostas.length - 1)]}**`);
-    }
-
     if (cmd === "help" || cmd === "ajuda") {
-  return message.channel.send({
-    embeds: [
-      createEmbed(
-        "📖 AJUDA DO BOT ULTRA",
+      return message.channel.send({
+        embeds: [
+          createEmbed(
+            "📖 AJUDA DO BOT ULTRA",
 `**🎉 Diversão**
 \`!ping\` \`!gay\` \`!corno\` \`!bonito\` \`!gostoso\` \`!ship\` \`!rp\` \`!slap\` \`!hug\` \`!kill\` \`!reviver\` \`!virus\` \`!rate\` \`!meme\` \`!xingar\` \`!elogiar\` \`!quem\` \`!8ball\`
 
@@ -1383,12 +1440,11 @@ module.exports = (client) => {
 \`!rankmoney\` \`!ranklevel\` \`!rankmsg\`
 
 **🎟️ Extras**
-\`!battlepass\` \`!resgatarbp\` \`!loteria\` \`!evento\` \`!sorteio\` \`!clima\` \`!perfil\``,
-        "Green"
-      )
-    ]
-  });
-}
-
+\`!battlepass\` \`!bp\` \`!resgatarbp\` \`!loteria\` \`!evento\` \`!sorteio\` \`!clima\` \`!perfil\``,
+            "Green"
+          )
+        ]
+      });
+    }
   });
 };
