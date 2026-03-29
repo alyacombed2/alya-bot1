@@ -7,7 +7,6 @@ const {
   restoreServer,
   zipBackup,
   splitFile,
-  nukeComBackup
 } = require("./systems/backupRestore");
 
 const client = new Client({
@@ -266,17 +265,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  if (message.content === "!nuke") {
-    await message.reply("💣 Backup + nuke...");
-
-    try {
-      await nukeComBackup(message.guild);
-      await message.reply("🔥 Servidor nukado com backup!");
-    } catch (err) {
-      console.log("❌ ERRO NUKE:", err.message);
-      await message.reply("❌ Erro ao executar o nuke.");
-    }
-  }
+  
 
   if (message.content === "!att") {
     await message.reply("📦 Baixando e enviando atualização do bot...");
