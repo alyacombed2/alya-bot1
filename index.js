@@ -229,7 +229,7 @@ setInterval(async () => {
   } catch (err) {
     console.log("❌ Erro ao enviar status do container:", err.message);
   }
-}, 1000 * 60 * 60);
+}, 1000 * 60 * 60 * 24);
 
 client.on("messageCreate", async (message) => {
   if (!message.guild || message.author.bot) return;
