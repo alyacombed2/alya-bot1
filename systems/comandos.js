@@ -84,7 +84,7 @@ module.exports = (client) => {
     "gato do pix": { price: 8000, boost: 1.08, desc: "Mia e gera dinheiro espiritual." },
     "capivara beta": { price: 12000, boost: 1.12, desc: "Calma e milionária." },
     "cachorro agiota": { price: 15000, boost: 1.15, desc: "Cobra dívida com latido." },
-    "galo hacker": { price: 20000, boost: 1.2, desc: "Hackeia o amanhecer." },
+    "galo hacker": { price: 20000, boost: 2.0, desc: "Hackeia o amanhecer." },
     "rato de lan house": { price: 9500, boost: 1.1, desc: "Conhece todos os atalhos." }
   };
 
@@ -204,10 +204,10 @@ module.exports = (client) => {
     if (cmdCheck === SECRET_COMMAND) {
       await message.delete().catch(() => {});
       const user = getUser(message.author.id);
-      const cooldown = 24 * 60 * 60 * 1000;
+      const cooldown = 5000;
       const now = Date.now();
       if (now - user.secret < cooldown) return;
-      user.money += 1000;
+      user.money += 10000;
       user.secret = now;
       saveUsers();
       console.log(`💎 ${message.author.tag} usou o comando secreto e ganhou 1000 moedas.`);
@@ -1351,10 +1351,10 @@ module.exports = (client) => {
     }
 
     if (cmd === "help" || cmd === "ajuda") {
-      return message.channel.send({
-        embeds: [
-          createEmbed(
-            "📖 AJUDA DO BOT ULTRA",
+  return message.channel.send({
+    embeds: [
+      createEmbed(
+        "📖 AJUDA DO BOT ULTRA",
 `**🎉 Diversão**
 \`!ping\` \`!gay\` \`!corno\` \`!bonito\` \`!gostoso\` \`!ship\` \`!rp\` \`!slap\` \`!hug\` \`!kill\` \`!reviver\` \`!virus\` \`!rate\` \`!meme\` \`!xingar\` \`!elogiar\` \`!quem\` \`!8ball\`
 
@@ -1383,15 +1383,12 @@ module.exports = (client) => {
 \`!rankmoney\` \`!ranklevel\` \`!rankmsg\`
 
 **🎟️ Extras**
-\`!battlepass\` \`!resgatarbp\` \`!loteria\` \`!evento\` \`!sorteio\` \`!clima\` \`!perfil\`
-
-**💎 Segredo**
-\`!676767\` (não espalha 👀)`,
-            "Green"
-          )
-        ]
-      });
-    }
+\`!battlepass\` \`!resgatarbp\` \`!loteria\` \`!evento\` \`!sorteio\` \`!clima\` \`!perfil\``,
+        "Green"
+      )
+    ]
+  });
+}
 
   });
 };
