@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
@@ -9,23 +9,38 @@ module.exports = (client) => {
   const SECRET_COMMAND = "676767";
   const OWNER_DATA_ID = "1372615579407618209";
 
-  const dataPath = path.join(__dirname, "..", "data", "economy.json");
+  const dataDir = path.join(__dirname, "..", "data");
+  const dataPath = path.join(dataDir, "economy.json");
 
-  if (!fs.existsSync(path.dirname(dataPath))) fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-  if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}, null, 2));
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(dataPath)) {
+    fs.writeFileSync(dataPath, JSON.stringify({}, null, 2), "utf8");
+  }
 
   let users = {};
+
   try {
-    users = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-  } catch {
+    const rawData = fs.readFileSync(dataPath, "utf8");
+    users = rawData && rawData.trim() ? JSON.parse(rawData) : {};
+  } catch (err) {
+    console.error("❌ Erro ao carregar economy.json:", err);
     users = {};
   }
 
   function saveUsers() {
-    fs.writeFileSync(dataPath, JSON.stringify(users, null, 2));
+    try {
+      fs.writeFileSync(dataPath, JSON.stringify(users, null, 2), "utf8");
+    } catch (err) {
+      console.error("❌ Erro ao salvar economy.json:", err);
+    }
   }
 
-  setInterval(saveUsers, 15000);
+  setInterval(() => {
+    saveUsers();
+  }, 15000);
 
   const ALLOWED_COMMANDS = [
     "ping","gay","corno","feio","rico","suspeito","ship","beijar","tapa","abraçar","abracar",
@@ -43,7 +58,7 @@ module.exports = (client) => {
     "resgatar","loteria","roubarbanco","assaltarbanco","girar","spin","sorte","azar",
     "xingar","elogiar","meme","npcfight","cassino2","raspadinha","investir","resgatarvip",
     "pass","battlepass","bp","resgatarbp","coleção","coletar","caixalendaria","caixarara","caixacomum",
-    "data"
+    "data","backup","save"
   ];
 
   const loja = {
@@ -90,6 +105,15 @@ module.exports = (client) => {
     "rato de lan house": { price: 9500, boost: 1.1, desc: "Conhece todos os atalhos." }
   };
 
+  function getPetBoost(user) {
+    if (!user.pets || !user.pets.length) return 1;
+    return user.pets.reduce((acc, pet) => acc * (petsData[pet]?.boost || 1), 1);
+  }
+
+  function rewardWithBoost(user, amount) {
+    return Math.floor(amount * getPetBoost(user));
+  }
+
   function getUser(id) {
     if (!users[id]) {
       users[id] = {
@@ -127,9 +151,49 @@ module.exports = (client) => {
         lastLottery: 0,
         investments: 0,
         investedAt: 0,
-        lastCollect: 0
+        lastCollect: 0,
+        bpClaimed: []
       };
+      saveUsers();
+    } else {
+      users[id].money ??= 500;
+      users[id].bank ??= 0;
+      users[id].xp ??= 0;
+      users[id].level ??= 1;
+      users[id].rep ??= 0;
+      users[id].kisses ??= 0;
+      users[id].slaps ??= 0;
+      users[id].wins ??= 0;
+      users[id].losses ??= 0;
+      users[id].messages ??= 0;
+      users[id].inventory ??= [];
+      users[id].marriedTo ??= null;
+      users[id].daily ??= 0;
+      users[id].work ??= 0;
+      users[id].beg ??= 0;
+      users[id].crime ??= 0;
+      users[id].secret ??= 0;
+      users[id].fish ??= 0;
+      users[id].mine ??= 0;
+      users[id].hunt ??= 0;
+      users[id].farm ??= 0;
+      users[id].boxes ??= [];
+      users[id].pets ??= [];
+      users[id].companyLevel ??= 0;
+      users[id].companyMoney ??= 0;
+      users[id].vip ??= false;
+      users[id].battlepass ??= 0;
+      users[id].collection ??= [];
+      users[id].lastBoss ??= 0;
+      users[id].lastDuel ??= 0;
+      users[id].lastNpc ??= 0;
+      users[id].lastLottery ??= 0;
+      users[id].investments ??= 0;
+      users[id].investedAt ??= 0;
+      users[id].lastCollect ??= 0;
+      users[id].bpClaimed ??= [];
     }
+
     return users[id];
   }
 
@@ -359,18 +423,56 @@ module.exports = (client) => {
     }
 
     if (cmd === "data") {
-      if (message.author.id !== OWNER_DATA_ID) {
-        return message.reply("❌ Só o dono configurado pode usar esse comando.");
-      }
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
 
-      const ok = await sendEconomyDataToOwner(client);
+  saveUsers();
+  const json = JSON.stringify(users, null, 2);
 
-      if (ok) {
-        return message.reply("📩 Os dados completos da economia foram enviados na sua DM.");
-      } else {
-        return message.reply("❌ Não consegui enviar a DM. Verifique se a DM está aberta.");
-      }
-    }
+  if (json.length <= 1900) {
+    return message.reply(`\`\`\`json\n${json}\n\`\`\``);
+  }
+
+  const chunks = [];
+  for (let i = 0; i < json.length; i += 1900) {
+    chunks.push(json.slice(i, i + 1900));
+  }
+
+  await message.reply(`📦 Banco de dados muito grande. Vou mandar em **${chunks.length} partes**.`);
+
+  for (let i = 0; i < chunks.length; i++) {
+    await message.channel.send(`**Parte ${i + 1}/${chunks.length}**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
+  }
+
+  return;
+}
+
+if (cmd === "backup") {
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
+
+  saveUsers();
+
+  const file = new AttachmentBuilder(dataPath, { name: "economy.json" });
+
+  return message.reply({
+    content: "💾 Aqui está o backup do banco de dados:",
+    files: [file]
+  });
+}
+
+if (cmd === "save") {
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
+
+  saveUsers();
+  return message.reply("💾 Dados salvos com sucesso no `economy.json`.");
+}
+
+
 
     if (cmd === "gay") {
       const alvo = message.mentions.users.first() || message.author;
