@@ -106,9 +106,22 @@ module.exports = (client) => {
   };
 
   function getPetBoost(user) {
-    if (!user.pets || !user.pets.length) return 1;
-    return user.pets.reduce((acc, pet) => acc * (petsData[pet]?.boost || 1), 1);
+  if (!user.pets || Object.keys(user.pets).length === 0) return 1;
+
+  let boost = 1;
+
+  for (const [petName, quantidade] of Object.entries(user.pets)) {
+    if (petsData[petName]) {
+      boost *= Math.pow(petsData[petName].boost, quantidade);
+    }
   }
+
+  return boost;
+}
+
+function rewardWithBoost(user, amount) {
+  return Math.floor(amount * getPetBoost(user));
+}
 
   function rewardWithBoost(user, amount) {
     return Math.floor(amount * getPetBoost(user));
@@ -139,7 +152,7 @@ module.exports = (client) => {
         hunt: 0,
         farm: 0,
         boxes: [],
-        pets: [],
+        pets: {},
         companyLevel: 0,
         companyMoney: 0,
         vip: false,
@@ -178,7 +191,7 @@ module.exports = (client) => {
       users[id].hunt ??= 0;
       users[id].farm ??= 0;
       users[id].boxes ??= [];
-      users[id].pets ??= [];
+      users[id].pets ??= {};
       users[id].companyLevel ??= 0;
       users[id].companyMoney ??= 0;
       users[id].vip ??= false;
@@ -232,14 +245,7 @@ module.exports = (client) => {
     return `${s}s`;
   }
 
-  function getPetBoost(user) {
-    if (!user.pets.length) return 1;
-    let boost = 1;
-    for (const pet of user.pets) {
-      if (petsData[pet]) boost *= petsData[pet].boost;
-    }
-    return boost;
-  }
+  
 
   function rewardWithBoost(user, amount) {
     return Math.floor(amount * getPetBoost(user));
@@ -283,7 +289,9 @@ module.exports = (client) => {
 💍 MarriedTo: ${u.marriedTo ?? "Ninguém"}
 🎒 Inventory: ${(u.inventory || []).length ? (u.inventory || []).join(", ") : "Vazio"}
 📦 Boxes: ${(u.boxes || []).length ? (u.boxes || []).join(", ") : "Nenhuma"}
-🐾 Pets: ${(u.pets || []).length ? (u.pets || []).join(", ") : "Nenhum"}
+🐾 Pets: ${u.pets && Object.keys(u.pets).length
+  ? Object.entries(u.pets).map(([nome, qtd]) => `${nome} x${qtd}`).join(", ")
+  : "Nenhum"}
 🏢 Company Level: ${u.companyLevel ?? 0}
 🏢 Company Money: ${u.companyMoney ?? 0}
 👑 VIP: ${u.vip ? "Sim" : "Não"}
@@ -1061,20 +1069,34 @@ if (cmd === "save") {
       }
 
       if (acao === "comprar") {
-        const nome = args.slice(1).join(" ").toLowerCase();
-        if (!petsData[nome]) return message.reply("❌ Pet não encontrado.");
-        if (user.money < petsData[nome].price) return message.reply("❌ Você não tem dinheiro suficiente.");
-        user.money -= petsData[nome].price;
-        user.pets.push(nome);
-        saveUsers();
-        return message.reply(`🐾 Você comprou o pet **${nome}**! Agora seus ganhos estão melhores.`);
-      }
+  const nome = args.slice(1).join(" ").toLowerCase();
+  if (!petsData[nome]) return message.reply("❌ Pet não encontrado.");
+  if (user.money < petsData[nome].price) return message.reply("❌ Você não tem dinheiro suficiente.");
+
+  user.money -= petsData[nome].price;
+  user.pets[nome] = (user.pets[nome] || 0) + 1;
+
+  saveUsers();
+  return message.reply(`🐾 Você comprou o pet **${nome}**! Agora você tem **${user.pets[nome]}x**.`);
+}
 
       if (acao === "lista") {
-        if (!user.pets.length) return message.reply("❌ Você não tem pets.");
-        saveUsers();
-        return message.reply(`🐶 Seus pets:\n${user.pets.map(p => `• **${p}**`).join("\n")}\n\n📈 Boost total: **x${getPetBoost(user).toFixed(2)}**`);
-      }
+  if (!user.pets || Object.keys(user.pets).length === 0) {
+    return message.reply("❌ Você não tem pets.");
+  }
+
+  const lista = Object.entries(user.pets)
+    .map(([nome, qtd]) => {
+      const boost = petsData[nome]?.boost || 1;
+      return `• **${nome}** x${qtd} (**x${boost}** cada)`;
+    })
+    .join("\n");
+
+  saveUsers();
+  return message.reply(
+    `🐶 **Seus pets:**\n${lista}\n\n📈 **Boost total:** x${getPetBoost(user).toFixed(2)}`
+  );
+}
     }
 
     if (cmd === "caixa" || cmd === "caixacomum" || cmd === "caixarara" || cmd === "caixalendaria") {
@@ -1265,7 +1287,7 @@ if (cmd === "save") {
 💀 **Derrotas:** ${data.losses}
 💍 **Casado com:** ${parceiro}
 🎒 **Itens:** ${data.inventory.length}
-🐾 **Pets:** ${data.pets.length}
+🐾 **Pets:** ${Object.values(data.pets || {}).reduce((a, b) => a + b, 0)}
 🏢 **Empresa:** Nível ${data.companyLevel}`,
             "Aqua"
           ).setThumbnail(alvo.displayAvatarURL({ dynamic: true }))
@@ -1388,7 +1410,8 @@ if (cmd === "save") {
         { nome: "Air Fryer Demoníaca", hp: 220, reward: [5000, 10000] }
       ];
       const boss = bosses[randomMoney(0, bosses.length - 1)];
-      const playerPower = randomMoney(40, 160) + user.level * 5 + user.pets.length * 10;
+      const totalPets = Object.values(user.pets || {}).reduce((a, b) => a + b, 0);
+      const playerPower = randomMoney(40, 160) + user.level * 5 + totalPets * 10;
       if (playerPower >= boss.hp) {
         const reward = rewardWithBoost(user, randomMoney(boss.reward[0], boss.reward[1]));
         user.money += reward;
