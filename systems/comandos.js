@@ -110,14 +110,25 @@ module.exports = (client) => {
 
   let boost = 1;
 
-  for (const [petName, quantidade] of Object.entries(user.pets)) {
+  // 🔥 CONVERTE ARRAY → OBJETO automaticamente
+  let petsObj = user.pets;
+  if (Array.isArray(user.pets)) {
+    const count = {};
+    for (const pet of user.pets) {
+      count[pet] = (count[pet] || 0) + 1;
+    }
+    petsObj = count;
+    user.pets = petsObj; // Salva a correção
+  }
+
+  for (const [petName, quantidade] of Object.entries(petsObj)) {
     if (petsData[petName]) {
       boost *= Math.pow(petsData[petName].boost, quantidade);
     }
   }
 
   return boost;
-}
+  }
 
 function rewardWithBoost(user, amount) {
   return Math.floor(amount * getPetBoost(user));
