@@ -191,7 +191,16 @@ function rewardWithBoost(user, amount) {
       users[id].hunt ??= 0;
       users[id].farm ??= 0;
       users[id].boxes ??= [];
-      users[id].pets ??= {};
+      user.pets ??= {};
+
+// 🔥 CORRIGE ARRAY → OBJETO
+if (Array.isArray(user.pets)) {
+  const count = {};
+  for (const pet of user.pets) {
+    count[pet] = (count[pet] || 0) + 1;
+  }
+  user.pets = count;
+}
       users[id].companyLevel ??= 0;
       users[id].companyMoney ??= 0;
       users[id].vip ??= false;
