@@ -435,26 +435,49 @@ function rewardWithBoost(user, amount) {
     return message.reply("❌ Só o dono configurado pode usar esse comando.");
   }
 
-  saveUsers();
-  const json = JSON.stringify(users, null, 2);
+  try {
+    // Lê o ARQUIVO REAL do container
+    const rawData = fs.readFileSync(dataPath, "utf8");
+    const jsonData = rawData.trim();
+    
+    if (!jsonData) {
+      return message.reply("📂 O arquivo `economy.json` está vazio.");
+    }
 
-  if (json.length <= 1900) {
-    return message.reply(`\`\`\`json\n${json}\n\`\`\``);
-  }
+    // Se couber em uma mensagem
+    if (jsonData.length <= 1900) {
+      return message.reply(`\`\`\`json\n${jsonData}\n\`\`\``);
+    }
 
-  const chunks = [];
-  for (let i = 0; i < json.length; i += 1900) {
-    chunks.push(json.slice(i, i + 1900));
-  }
+    // Divide em chunks se for muito grande
+    const chunks = [];
+    for (let i = 0; i < jsonData.length; i += 1900) {
+      chunks.push(jsonData.slice(i, i + 1900));
+    }
 
-  await message.reply(`📦 Banco de dados muito grande. Vou mandar em **${chunks.length} partes**.`);
+    await message.reply(`📦 Arquivo \`economy.json\` muito grande (${(jsonData.length/1000).toFixed(1)}KB). Enviando em **${chunks.length} partes**:`);
 
-  for (let i = 0; i < chunks.length; i++) {
-    await message.channel.send(`**Parte ${i + 1}/${chunks.length}**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
+    for (let i = 0; i < chunks.length; i++) {
+      await message.channel.send(`**📄 Parte ${i + 1}/${chunks.length}**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
+    }
+
+    // Informações extras
+    const parsed = JSON.parse(jsonData);
+    const totalUsers = Object.keys(parsed).length;
+    const totalMoney = Object.values(parsed).reduce((acc, u) => acc + (u.money || 0) + (u.bank || 0), 0);
+    
+    await message.channel.send(`📊 **ESTATÍSTICAS DO ARQUIVO:**
+- **Usuários:** ${totalUsers}
+- **Dinheiro total:** ${totalMoney.toLocaleString()} moedas
+- **Tamanho:** ${(jsonData.length/1024).toFixed(2)} KB`);
+
+  } catch (err) {
+    console.error("❌ Erro ao ler economy.json:", err);
+    return message.reply(`❌ Erro ao ler o arquivo: \`${err.message}\``);
   }
 
   return;
-}
+    }
 
 if (cmd === "backup") {
   if (message.author.id !== OWNER_DATA_ID) {
