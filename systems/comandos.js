@@ -436,44 +436,50 @@ function rewardWithBoost(user, amount) {
   }
 
   try {
-    // Lê o ARQUIVO REAL do container
-    const rawData = fs.readFileSync(dataPath, "utf8");
-    const jsonData = rawData.trim();
+    // Salva antes de enviar
+    saveUsers();
     
-    if (!jsonData) {
-      return message.reply("📂 O arquivo `economy.json` está vazio.");
-    }
-
-    // Se couber em uma mensagem
-    if (jsonData.length <= 1900) {
-      return message.reply(`\`\`\`json\n${jsonData}\n\`\`\``);
-    }
-
-    // Divide em chunks se for muito grande
-    const chunks = [];
-    for (let i = 0; i < jsonData.length; i += 1900) {
-      chunks.push(jsonData.slice(i, i + 1900));
-    }
-
-    await message.reply(`📦 Arquivo \`economy.json\` muito grande (${(jsonData.length/1000).toFixed(1)}KB). Enviando em **${chunks.length} partes**:`);
-
-    for (let i = 0; i < chunks.length; i++) {
-      await message.channel.send(`**📄 Parte ${i + 1}/${chunks.length}**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
-    }
-
-    // Informações extras
-    const parsed = JSON.parse(jsonData);
+    // Cria um ZIP temporário com o economy.json
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip();
+    
+    // Adiciona o economy.json ao ZIP
+    zip.addLocalFile(dataPath, '', 'economy.json');
+    
+    // Gera o arquivo ZIP temporário
+    const zipPath = path.join(__dirname, '..', 'data', 'economy_backup.zip');
+    zip.writeZip(zipPath);
+    
+    // Estatísticas do arquivo
+    const stats = fs.statSync(dataPath);
+    const fileSize = (stats.size / 1024).toFixed(2);
+    const rawData = fs.readFileSync(dataPath, "utf8");
+    const parsed = JSON.parse(rawData);
     const totalUsers = Object.keys(parsed).length;
     const totalMoney = Object.values(parsed).reduce((acc, u) => acc + (u.money || 0) + (u.bank || 0), 0);
     
-    await message.channel.send(`📊 **ESTATÍSTICAS DO ARQUIVO:**
+    // Envia o ZIP como anexo
+    const zipFile = new AttachmentBuilder(zipPath, { name: "economy_backup.zip" });
+    
+    await message.reply({
+      content: `📦 **BACKUP DO ECONOMY.JSON ENVIADO!**\n\n📊 **ESTATÍSTICAS:**
 - **Usuários:** ${totalUsers}
 - **Dinheiro total:** ${totalMoney.toLocaleString()} moedas
-- **Tamanho:** ${(jsonData.length/1024).toFixed(2)} KB`);
-
+- **Tamanho:** ${fileSize} KB
+- **Arquivo:** \`economy.json\` (dentro do ZIP)`,
+      files: [zipFile]
+    });
+    
+    // Deleta o ZIP temporário após 5 segundos
+    setTimeout(() => {
+      fs.unlink(zipPath, (err) => {
+        if (err) console.error('Erro ao deletar ZIP temporário:', err);
+      });
+    }, 5000);
+    
   } catch (err) {
-    console.error("❌ Erro ao ler economy.json:", err);
-    return message.reply(`❌ Erro ao ler o arquivo: \`${err.message}\``);
+    console.error("❌ Erro ao criar ZIP:", err);
+    return message.reply(`❌ Erro ao criar backup: \`${err.message}\``);
   }
 
   return;
