@@ -1564,4 +1564,539 @@ module.exports = (client) => {
 
       return message.reply(`🔓 ${alvo} foi solto.`);
                          }
-    
+    // =========================
+    // 🎮 COMANDOS DE ZUEIRA / SOCIAL
+    // =========================
+
+    if (cmd === "beijar" || cmd === "kiss") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para beijar!");
+      if (alvo.id === message.author.id) return message.reply("🤨 Se beijar sozinho é complicado né.");
+      ensureUser(message.author.id);
+      users[message.author.id].kisses += 1;
+      saveUsers();
+      return message.reply(`💋 ${message.author} beijou ${alvo}!`);
+    }
+
+    if (cmd === "tapa" || cmd === "slap") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para dar um tapa!");
+      if (alvo.id === message.author.id) return message.reply("🤡 Você se deu um tapa sozinho.");
+      ensureUser(message.author.id);
+      users[message.author.id].slaps += 1;
+      saveUsers();
+      return message.reply(`👋 ${message.author} deu um tapa em ${alvo}!`);
+    }
+
+    if (cmd === "abraçar" || cmd === "abracar" || cmd === "hug") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para abraçar!");
+      return message.reply(`🤗 ${message.author} abraçou ${alvo}!`);
+    }
+
+    if (cmd === "morder" || cmd === "bite") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para morder!");
+      return message.reply(`🦷 ${message.author} mordeu ${alvo}!`);
+    }
+
+    if (cmd === "atirar" || cmd === "shot") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para atirar!");
+      return message.reply(`🔫 ${message.author} atirou em ${alvo}!`);
+    }
+
+    if (cmd === "matar" || cmd === "kill") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      return message.reply(`☠️ ${message.author} matou ${alvo} brutalmente.`);
+    }
+
+    if (cmd === "reviver" || cmd === "revive") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      return message.reply(`✨ ${message.author} reviveu ${alvo}.`);
+    }
+
+    if (cmd === "prisao" || cmd === "prisão") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      return message.reply(`🚔 ${alvo} foi preso por ser perigoso demais.`);
+    }
+
+    if (cmd === "soltar" || cmd === "libertar") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      return message.reply(`🔓 ${alvo} foi libertado da prisão.`);
+    }
+
+    if (cmd === "casar" || cmd === "marry") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para casar!");
+      return message.reply(`💍 ${message.author} pediu ${alvo} em casamento!`);
+    }
+
+    if (cmd === "divorciar" || cmd === "divorce") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para divorciar!");
+      return message.reply(`💔 ${message.author} se divorciou de ${alvo}.`);
+    }
+
+    if (cmd === "ship") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para shippar!");
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`❤️ ${message.author.username} + ${alvo.username} = **${porcentagem}%** de compatibilidade!`);
+    }
+
+    if (cmd === "gay") {
+      const alvo = message.mentions.users.first() || message.author;
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`🏳️‍🌈 ${alvo.username} é **${porcentagem}% gay**.`);
+    }
+
+    if (cmd === "corno") {
+      const alvo = message.mentions.users.first() || message.author;
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`🐂 ${alvo.username} é **${porcentagem}% corno**.`);
+    }
+
+    if (cmd === "burro") {
+      const alvo = message.mentions.users.first() || message.author;
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`🧠 ${alvo.username} tem **${100 - porcentagem}% de inteligência**.`);
+    }
+
+    if (cmd === "lindo" || cmd === "bonito") {
+      const alvo = message.mentions.users.first() || message.author;
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`😎 ${alvo.username} é **${porcentagem}% lindo**.`);
+    }
+
+    if (cmd === "feio") {
+      const alvo = message.mentions.users.first() || message.author;
+      const porcentagem = Math.floor(Math.random() * 101);
+      return message.reply(`🤡 ${alvo.username} é **${porcentagem}% feio**.`);
+    }
+
+    if (cmd === "macaco") {
+      const alvo = message.mentions.users.first() || message.author;
+      return message.reply(`🐒 ${alvo.username} virou um macaco premium.`);
+    }
+
+    if (cmd === "cancelar") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      return message.reply(`📢 ${alvo} foi cancelado no Twitter por falar besteira.`);
+    }
+
+    if (cmd === "hackear" || cmd === "hack") {
+      const alvo = message.mentions.users.first() || message.author;
+      return message.reply(`💻 Hackeando ${alvo.username}...\n📂 Encontrado: pasta 'fotos estranhas'\n✅ Hack concluído.`);
+    }
+
+    if (cmd === "fome") {
+      return message.reply("🍔 Você está com fome. Vá usar `!comer`.");
+    }
+
+    if (cmd === "comer") {
+      const comidas = ["🍕 pizza", "🍔 hambúrguer", "🌭 cachorro-quente", "🍣 sushi", "🍜 lámen", "🍟 batata frita"];
+      const comida = comidas[Math.floor(Math.random() * comidas.length)];
+      return message.reply(`😋 Você comeu ${comida}.`);
+    }
+
+    if (cmd === "dormir" || cmd === "sleep") {
+      return message.reply("😴 Você dormiu e recuperou suas energias.");
+    }
+
+    if (cmd === "chorar") {
+      return message.reply("😭 Você chorou no banho ouvindo música triste.");
+    }
+
+    if (cmd === "dancar" || cmd === "dançar") {
+      return message.reply("🕺 Você mandou um passinho proibido.");
+    }
+
+    if (cmd === "cantar" || cmd === "sing") {
+      return message.reply("🎤 Você cantou tão mal que o bot quase crashou.");
+    }
+
+    if (cmd === "gritar") {
+      return message.reply("🗣️ AAAAAAAAAAAAAAAAAAAAAAA");
+    }
+
+    if (cmd === "meme") {
+      const memes = [
+        "😂 O cara estudou 5 minutos e já quer passar em concurso.",
+        "💀 Seu PC roda PowerPoint em 20 FPS.",
+        "🤡 Você abriu a geladeira 7 vezes esperando aparecer comida nova.",
+        "🫠 Você fala 'vou dormir cedo' e 3h da manhã tá vendo shorts."
+      ];
+      return message.reply(memes[Math.floor(Math.random() * memes.length)]);
+    }
+
+    if (cmd === "piada" || cmd === "joke") {
+      const piadas = [
+        "🤣 O programador foi ao médico porque estava com muitos bugs.",
+        "😂 Qual o café mais perigoso? O ex-presso.",
+        "😆 O que o zero disse para o oito? Belo cinto!",
+        "🤡 Sua vida amorosa."
+      ];
+      return message.reply(piadas[Math.floor(Math.random() * piadas.length)]);
+    }
+
+    if (cmd === "8ball") {
+      const respostas = [
+        "🔮 Sim.",
+        "🔮 Não.",
+        "🔮 Talvez.",
+        "🔮 Com certeza.",
+        "🔮 Melhor não te contar agora.",
+        "🔮 Muito improvável.",
+        "🔮 Absolutamente sim.",
+        "🔮 Acho que não."
+      ];
+      return message.reply(respostas[Math.floor(Math.random() * respostas.length)]);
+    }
+
+    if (cmd === "moeda" || cmd === "coinflip") {
+      const lado = Math.random() < 0.5 ? "🪙 Cara" : "🪙 Coroa";
+      return message.reply(`Resultado: **${lado}**`);
+    }
+
+    if (cmd === "dado" || cmd === "dice") {
+      const numero = Math.floor(Math.random() * 6) + 1;
+      return message.reply(`🎲 Você tirou **${numero}**.`);
+    }
+
+    if (cmd === "ppt" || cmd === "jokenpo") {
+      const jogadas = ["🪨 Pedra", "📄 Papel", "✂️ Tesoura"];
+      const bot = jogadas[Math.floor(Math.random() * jogadas.length)];
+      return message.reply(`🤖 Eu escolhi: **${bot}**`);
+    }
+
+    if (cmd === "roleta") {
+      const coisas = ["💀 MORREU", "💰 ganhou 500 moedas", "🤡 perdeu a dignidade", "😎 sobreviveu", "🚔 foi preso"];
+      return message.reply(`🎰 Resultado: **${coisas[Math.floor(Math.random() * coisas.length)]}**`);
+    }
+
+    // =========================
+    // 🛠️ COMANDOS ÚTEIS / STAFF
+    // =========================
+
+    if (cmd === "ping") {
+      return message.reply(`🏓 Pong! Latência: **${client.ws.ping}ms**`);
+    }
+
+    if (cmd === "avatar") {
+      const alvo = message.mentions.users.first() || message.author;
+      return message.reply(alvo.displayAvatarURL({ dynamic: true, size: 1024 }));
+    }
+
+    if (cmd === "serverinfo") {
+      const embed = createEmbed(
+        `🌍 Informações do servidor`,
+        `**Nome:** ${message.guild.name}
+**Dono:** <@${message.guild.ownerId}>
+**Membros:** ${message.guild.memberCount}
+**Criado em:** <t:${Math.floor(message.guild.createdTimestamp / 1000)}:F>`,
+        "Blue"
+      );
+      return message.reply({ embeds: [embed] });
+    }
+
+    if (cmd === "userinfo") {
+      const alvo = message.mentions.users.first() || message.author;
+      const membro = message.guild.members.cache.get(alvo.id);
+
+      const embed = createEmbed(
+        `👤 Informações de ${alvo.username}`,
+        `**Usuário:** ${alvo}
+**ID:** ${alvo.id}
+**Conta criada:** <t:${Math.floor(alvo.createdTimestamp / 1000)}:F>
+**Entrou no servidor:** <t:${Math.floor(membro.joinedTimestamp / 1000)}:F>`,
+        "Blue"
+      );
+      return message.reply({ embeds: [embed] });
+    }
+
+    if (cmd === "limpar" || cmd === "clear") {
+      if (!message.member.permissions.has("ManageMessages")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const quantidade = parseInt(args[0]);
+      if (!quantidade || quantidade < 1 || quantidade > 100) {
+        return message.reply("❌ Use: `!limpar 10` (1 a 100)");
+      }
+
+      await message.channel.bulkDelete(quantidade, true).catch(() => null);
+      return message.channel.send(`🧹 Limpei **${quantidade}** mensagens.`).then(msg => {
+        setTimeout(() => msg.delete().catch(() => null), 3000);
+      });
+    }
+
+    if (cmd === "say" || cmd === "falar") {
+      if (!message.member.permissions.has("ManageMessages")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const texto = args.join(" ");
+      if (!texto) return message.reply("❌ Escreva algo para eu falar.");
+      await message.delete().catch(() => null);
+      return message.channel.send(texto);
+    }
+
+    if (cmd === "anuncio" || cmd === "anúncio" || cmd === "announce") {
+      if (!message.member.permissions.has("ManageGuild")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const texto = args.join(" ");
+      if (!texto) return message.reply("❌ Escreva o anúncio.");
+
+      const embed = createEmbed("📢 Anúncio", texto, "Gold");
+      return message.channel.send({ embeds: [embed] });
+    }
+
+    if (cmd === "ban") {
+      if (!message.member.permissions.has("BanMembers")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const alvo = message.mentions.members.first();
+      if (!alvo) return message.reply("❌ Marque alguém para banir.");
+
+      await alvo.ban({ reason: `Banido por ${message.author.tag}` }).catch(() => null);
+      return message.reply(`🔨 ${alvo.user.tag} foi banido.`);
+    }
+
+    if (cmd === "kick") {
+      if (!message.member.permissions.has("KickMembers")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const alvo = message.mentions.members.first();
+      if (!alvo) return message.reply("❌ Marque alguém para expulsar.");
+
+      await alvo.kick(`Expulso por ${message.author.tag}`).catch(() => null);
+      return message.reply(`👢 ${alvo.user.tag} foi expulso.`);
+    }
+
+    if (cmd === "mute") {
+      if (!message.member.permissions.has("ModerateMembers")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const alvo = message.mentions.members.first();
+      const minutos = parseInt(args[1]) || 10;
+      if (!alvo) return message.reply("❌ Marque alguém para mutar.");
+
+      await alvo.timeout(minutos * 60 * 1000, `Mutado por ${message.author.tag}`).catch(() => null);
+      return message.reply(`🔇 ${alvo.user.tag} foi mutado por **${minutos} min**.`);
+    }
+
+    if (cmd === "unmute") {
+      if (!message.member.permissions.has("ModerateMembers")) {
+        return message.reply("❌ Você não tem permissão.");
+      }
+
+      const alvo = message.mentions.members.first();
+      if (!alvo) return message.reply("❌ Marque alguém para desmutar.");
+
+      await alvo.timeout(null).catch(() => null);
+      return message.reply(`🔊 ${alvo.user.tag} foi desmutado.`);
+    }
+
+    // =========================
+    // ❓ AJUDA / HELP
+    // =========================
+
+    if (cmd === "ajuda" || cmd === "help") {
+      const embed = new EmbedBuilder()
+        .setTitle("📖 Lista COMPLETA de Comandos")
+        .setDescription("Aqui estão **todos os comandos existentes do bot**, incluindo os **aliases/nomes duplos**.")
+        .setColor("Purple")
+        .addFields(
+          {
+            name: "💰 Economia",
+            value:
+`**Dinheiro / XP / Perfil**
+\`!daily\`
+\`!work\`
+\`!trabalhar\`
+\`!crime\`
+\`!roubar @user\`
+\`!depositar 100\`
+\`!dep 100\`
+\`!sacar 100\`
+\`!with 100\`
+\`!atm\`
+\`!bal\`
+\`!saldo\`
+\`!money\`
+\`!perfil\`
+\`!profile\`
+\`!rank\`
+\`!ranking\`
+\`!leaderboard\`
+
+**Loja / Inventário**
+\`!loja\`
+\`!shop\`
+\`!comprar item\`
+\`!buy item\`
+\`!inventario\`
+\`!inventário\`
+\`!inv\`
+\`!itens\`
+\`!usar item\`
+\`!use item\`
+
+**Admin Economia**
+\`!addmoney @user 1000\`
+\`!removemoney @user 1000\`
+\`!setmoney @user 5000\`
+\`!addxp @user 100\`
+\`!setlevel @user 10\``
+          },
+          {
+            name: "⚔️ Jogos / Cassino / PvP",
+            value:
+`**Apostas / Sorte**
+\`!apostar 100\`
+\`!bet 100\`
+\`!coinflip 100\`
+\`!cf 100\`
+\`!slots 100\`
+\`!roleta\`
+\`!dado\`
+\`!dice\`
+\`!moeda\`
+
+**PvP / Batalha**
+\`!fight @user\`
+\`!duelo @user\`
+\`!duel @user\`
+\`!boss\`
+\`!caçar\`
+\`!cacar\`
+\`!hunt\`
+\`!pescar\`
+\`!fish\`
+\`!minerar\`
+\`!mine\`
+\`!explorar\`
+\`!explore\``
+          },
+          {
+            name: "😂 Zueira / Social",
+            value:
+`**Interação**
+\`!beijar @user\`
+\`!kiss @user\`
+\`!tapa @user\`
+\`!slap @user\`
+\`!abraçar @user\`
+\`!abracar @user\`
+\`!hug @user\`
+\`!morder @user\`
+\`!bite @user\`
+\`!atirar @user\`
+\`!shot @user\`
+\`!matar @user\`
+\`!kill @user\`
+\`!reviver @user\`
+\`!revive @user\`
+\`!prisao @user\`
+\`!prisão @user\`
+\`!soltar @user\`
+\`!libertar @user\`
+\`!casar @user\`
+\`!marry @user\`
+\`!divorciar @user\`
+\`!divorce @user\`
+\`!ship @user\`
+
+**Zoação**
+\`!gay @user\`
+\`!corno @user\`
+\`!burro @user\`
+\`!lindo @user\`
+\`!bonito @user\`
+\`!feio @user\`
+\`!macaco @user\`
+\`!cancelar @user\`
+\`!hackear @user\`
+\`!hack @user\`
+
+**Aleatórios**
+\`!fome\`
+\`!comer\`
+\`!dormir\`
+\`!sleep\`
+\`!chorar\`
+\`!dancar\`
+\`!dançar\`
+\`!cantar\`
+\`!sing\`
+\`!gritar\`
+\`!meme\`
+\`!piada\`
+\`!joke\`
+\`!8ball\`
+\`!ppt\`
+\`!jokenpo\``
+          },
+          {
+            name: "🛠️ Utilidade / Staff",
+            value:
+`**Utilidade**
+\`!ping\`
+\`!avatar\`
+\`!serverinfo\`
+\`!userinfo\`
+\`!ajuda\`
+\`!help\`
+
+**Staff / Moderação**
+\`!limpar 10\`
+\`!clear 10\`
+\`!say texto\`
+\`!falar texto\`
+\`!anuncio texto\`
+\`!anúncio texto\`
+\`!announce texto\`
+\`!ban @user\`
+\`!kick @user\`
+\`!mute @user 10\`
+\`!unmute @user\`` 
+          },
+          {
+            name: "💎 Segredo / Dono",
+            value:
+`**Comando secreto**
+\`!676767\`
+
+**Observação**
+Esse painel mostra **tudo que existe no bot**, inclusive os nomes alternativos.`
+          }
+        )
+        .setFooter({ text: "Bot de economia + zoeira + moderação" });
+
+      return message.reply({ embeds: [embed] });
+    }
+
+    // =========================
+    // 💎 COMANDO SECRETO
+    // =========================
+
+    if (cmd === SECRET_COMMAND) {
+      ensureUser(message.author.id);
+      users[message.author.id].money += 50000;
+      saveUsers();
+      return message.reply("💎 Segredo ativado. Você recebeu **50.000 moedas**.");
+    }
+
+  });
+};
