@@ -1913,14 +1913,15 @@ module.exports = (client) => {
     // =========================
 
     if (cmd === "ajuda" || cmd === "help") {
-      const embed = new EmbedBuilder()
-        .setTitle("📖 Lista COMPLETA de Comandos")
-        .setDescription("Aqui estão **todos os comandos existentes do bot**, incluindo os **aliases/nomes duplos**.")
-        .setColor("Purple")
-        .addFields(
-          {
-            name: "💰 Economia",
-            value:
+      
+const embed = new EmbedBuilder()
+    .setTitle("📖 Lista COMPLETA de Comandos")
+    .setDescription("Aqui estão **todos os comandos existentes do bot**, incluindo os **aliases/nomes duplos**.")
+    .setColor("Purple")
+    .addFields(
+      {
+        name: "💰 Economia",
+        value:
 `**Dinheiro / XP / Perfil**
 \`!daily\`
 \`!work\`
@@ -1958,11 +1959,12 @@ module.exports = (client) => {
 \`!removemoney @user 1000\`
 \`!setmoney @user 5000\`
 \`!addxp @user 100\`
-\`!setlevel @user 10\``
-          },
-          {
-            name: "⚔️ Jogos / Cassino / PvP",
-            value:
+\`!setlevel @user 10\``,
+        inline: false
+      },
+      {
+        name: "⚔️ Jogos / Cassino / PvP",
+        value:
 `**Apostas / Sorte**
 \`!apostar 100\`
 \`!bet 100\`
@@ -1987,11 +1989,12 @@ module.exports = (client) => {
 \`!minerar\`
 \`!mine\`
 \`!explorar\`
-\`!explore\``
-          },
-          {
-            name: "😂 Zueira / Social",
-            value:
+\`!explore\``,
+        inline: false
+      },
+      {
+        name: "😂 Zueira / Social",
+        value:
 `**Interação**
 \`!beijar @user\`
 \`!kiss @user\`
@@ -2046,11 +2049,12 @@ module.exports = (client) => {
 \`!joke\`
 \`!8ball\`
 \`!ppt\`
-\`!jokenpo\``
-          },
-          {
-            name: "🛠️ Utilidade / Staff",
-            value:
+\`!jokenpo\``,
+        inline: false
+      },
+      {
+        name: "🛠️ Utilidade / Staff",
+        value:
 `**Utilidade**
 \`!ping\`
 \`!avatar\`
@@ -2070,22 +2074,24 @@ module.exports = (client) => {
 \`!ban @user\`
 \`!kick @user\`
 \`!mute @user 10\`
-\`!unmute @user\`` 
-          },
-          {
-            name: "💎 Segredo / Dono",
-            value:
+\`!unmute @user\``,
+        inline: false
+      },
+      {
+        name: "💎 Segredo / Dono",
+        value:
 `**Comando secreto**
 \`!676767\`
 
 **Observação**
-Esse painel mostra **tudo que existe no bot**, inclusive os nomes alternativos.`
-          }
-        )
-        .setFooter({ text: "Bot de economia + zoeira + moderação" });
+Esse painel mostra **tudo que existe no bot**, inclusive os nomes alternativos.`,
+        inline: false
+      }
+    )
+    .setFooter({ text: "Bot de economia + zoeira + moderação" });
 
-      return message.reply({ embeds: [embed] });
-    }
+  return message.reply({ embeds: [embed] });
+}
 
     // =========================
     // 💎 COMANDO SECRETO
