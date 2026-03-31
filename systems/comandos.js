@@ -1,8 +1,4 @@
-const {
-  EmbedBuilder,
-  PermissionFlagsBits
-} = require("discord.js");
-
+const { EmbedBuilder, AttachmentBuilder } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
@@ -11,30 +7,116 @@ module.exports = (client) => {
   const COMMAND_CHANNEL_ID = "1487213672362278942";
   const BLOCK_COMMANDS_CHANNEL_ID = "1476321406647275571";
   const SECRET_COMMAND = "676767";
+  const OWNER_DATA_ID = "1372615579407618209";
 
-  const dataPath = path.join(__dirname, "..", "data", "economy.json");
+  const dataDir = path.join(__dirname, "..", "data");
+  const dataPath = path.join(dataDir, "economy.json");
 
-  // =========================
-  // DADOS
-  // =========================
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(dataPath)) {
+    fs.writeFileSync(dataPath, JSON.stringify({}, null, 2), "utf8");
+  }
+
   let users = {};
 
-  if (fs.existsSync(dataPath)) {
-    try {
-      users = JSON.parse(fs.readFileSync(dataPath, "utf8"));
-    } catch (err) {
-      console.error("Erro ao carregar economy.json:", err);
-      users = {};
-    }
+  try {
+    const rawData = fs.readFileSync(dataPath, "utf8");
+    users = rawData && rawData.trim() ? JSON.parse(rawData) : {};
+  } catch (err) {
+    console.error("❌ Erro ao carregar economy.json:", err);
+    users = {};
   }
 
   function saveUsers() {
-    fs.writeFileSync(dataPath, JSON.stringify(users, null, 2));
+    try {
+      fs.writeFileSync(dataPath, JSON.stringify(users, null, 2), "utf8");
+    } catch (err) {
+      console.error("❌ Erro ao salvar economy.json:", err);
+    }
   }
 
-  function ensureUser(userId) {
-    if (!users[userId]) {
-      users[userId] = {
+  setInterval(() => {
+    saveUsers();
+  }, 15000);
+
+  const ALLOWED_COMMANDS = [
+    "ping","gay","corno","feio","rico","suspeito","ship","beijar","tapa","abraçar","abracar",
+    "morder","casar","divorcio","divórcio","roleta","8ball","quem","saldo","money","daily",
+    "work","trabalhar","crime","apostar","assaltar","loja","comprar","inventario","inv",
+    "usar","perfil","rankmoney","ranklevel","rankmsg","ppt","caraoucoroa","dado","adivinhe",
+    "fakeban","fakemute","fakekick","prisao","prisão","cancelar","evento","ajuda","help",
+    "bonito","gostoso","fome","sede","rp","slap","hug","kill","reviver","fortuna",
+    "roubar","blackjack","slots","roulette","dice","rps","love","hate","adm","mod",
+    "virus","hack","ddos","nuke","rate","avaliar","clima","tempo","jokenpo","pedrapapel",
+    "moeda","coinflip","sorteio","raffle","beg","pedir","doar","gift","transferir",
+    "bal","dinheiro","trabalhador","emprego","roubo","heist","cassino","aposta","bet",
+    "pescar","minerar","caçar","farmar","empresa","pet","caixa","abrir","dailyvip",
+    "boss","duelo","npc","craft","colecao","mercado","vender","upitem","trabalhos",
+    "resgatar","loteria","roubarbanco","assaltarbanco","girar","spin","sorte","azar",
+    "xingar","elogiar","meme","npcfight","cassino2","raspadinha","investir","resgatarvip",
+    "pass","battlepass","bp","resgatarbp","coleção","coletar","caixalendaria","caixarara","caixacomum",
+    "data","backup","save"
+  ];
+
+  const loja = {
+    "capivara": { price: 1500, desc: "Uma capivara lendária.", use: "🦫 Você invocou uma capivara suprema." },
+    "uno reverso": { price: 2500, desc: "Reverte a humilhação.", use: "🔄 Você usou um UNO Reverso." },
+    "ar de pote": { price: 500, desc: "Produto premium.", use: "🫙 Você respirou ar de pote gourmet." },
+    "miojo sagrado": { price: 800, desc: "Cura a tristeza.", use: "🍜 O miojo sagrado restaurou sua alma." },
+    "chinelo divino": { price: 2000, desc: "Arma suprema da mãe.", use: "🩴 O chinelo divino acertou alguém." },
+    "vip de pobre": { price: 5000, desc: "Luxo duvidoso.", use: "👑 Agora você é premium de Taubaté." },
+    "lingote": { price: 10000, desc: "Dinheiro puro.", use: "🏅 Você brilhou com seu lingote." },
+    "drone": { price: 7500, desc: "Espiona todo mundo.", use: "🚁 Seu drone está vigiando geral." },
+    "cafe": { price: 300, desc: "Remove sono.", use: "☕ Você bebeu café e virou um foguete." },
+    "pizza": { price: 1200, desc: "Recupera felicidade.", use: "🍕 Você comeu uma pizza lendária." },
+    "pc gamer": { price: 15000, desc: "Roda até a alma.", use: "🖥️ Seu FPS subiu pra outro nível." },
+    "anel": { price: 4000, desc: "Perfeito para casamento.", use: "💍 Você exibiu seu anel brilhante." },
+    "água gamer": { price: 999, desc: "Aumenta o RGB interno.", use: "💧 Você bebeu água gamer e ficou mais rápido." },
+    "teclado quebrado": { price: 1800, desc: "Só funciona o W.", use: "⌨️ Você digitou W infinitamente." },
+    "mouse lendário": { price: 4200, desc: "Dá aim de protagonista.", use: "🖱️ Seu mouse virou hack." },
+    "monitor 360hz": { price: 18000, desc: "Você enxerga o futuro.", use: "🖥️ Seu olho ficou em 360 FPS." },
+    "miolo de pão": { price: 69, desc: "Comida de emergência.", use: "🍞 Você comeu miolo de pão e sobreviveu." },
+    "cueca da sorte": { price: 6666, desc: "Item proibido em 27 países.", use: "🩲 Sua sorte aumentou bizarramente." },
+    "pote de lágrimas": { price: 1337, desc: "Lágrimas de derrotados.", use: "😭 Você absorveu a dor alheia." },
+    "sanduiche radioativo": { price: 3333, desc: "Brilha no escuro.", use: "☢️ Você ganhou superpoderes duvidosos." },
+    "celular tijolão": { price: 2750, desc: "Indestrutível.", use: "📱 Seu celular causou dano crítico." },
+    "air fryer mística": { price: 12000, desc: "Frita qualquer esperança.", use: "🍟 A air fryer mística aqueceu sua alma." },
+    "espada de plástico": { price: 2222, desc: "Assustadoramente inútil.", use: "🗡️ Você duelou com honra e zero dano." },
+    "galinha suprema": { price: 9999, desc: "Bota ovos de sabedoria.", use: "🐔 A galinha suprema te julgou." },
+    "óculos do sigma": { price: 7777, desc: "Aumenta sua aura em 300%.", use: "🕶️ Você entrou em modo sigma." },
+    "fone estourado": { price: 950, desc: "Só chiado e sofrimento.", use: "🎧 Você ouviu ruído premium." },
+    "controle driftado": { price: 1450, desc: "Anda sozinho pra esquerda.", use: "🎮 Seu personagem foi embora sozinho." },
+    "pneu de fusca": { price: 2600, desc: "Talvez útil, talvez não.", use: "🛞 Você rolou com estilo." },
+    "urso de pelúcia gangster": { price: 5400, desc: "Fofo e perigoso.", use: "🧸 O urso resolveu seus problemas." },
+    "pão com wifi": { price: 6100, desc: "Conecta no roteador pelo cheiro.", use: "📶 Seu pão pegou sinal 5G." },
+    "caneca do caos": { price: 3700, desc: "Toda bebida vira suspeita.", use: "☕ O caos foi servido." },
+    "escudo de papelão": { price: 1300, desc: "Defesa questionável.", use: "🛡️ Você bloqueou um tapa imaginário." },
+    "capa invisível falsa": { price: 8900, desc: "Todo mundo te vê.", use: "👻 Você fingiu sumir com classe." }
+  };
+
+  const petsData = {
+    "gato do pix": { price: 8000, boost: 1.08, desc: "Mia e gera dinheiro espiritual." },
+    "capivara beta": { price: 12000, boost: 1.12, desc: "Calma e milionária." },
+    "cachorro agiota": { price: 15000, boost: 1.15, desc: "Cobra dívida com latido." },
+    "galo hacker": { price: 20000, boost: 2.0, desc: "Hackeia o amanhecer." },
+    "rato de lan house": { price: 9500, boost: 1.1, desc: "Conhece todos os atalhos." }
+  };
+
+  function getPetBoost(user) {
+    if (!user.pets || !user.pets.length) return 1;
+    return user.pets.reduce((acc, pet) => acc * (petsData[pet]?.boost || 1), 1);
+  }
+
+  function rewardWithBoost(user, amount) {
+    return Math.floor(amount * getPetBoost(user));
+  }
+
+  function getUser(id) {
+    if (!users[id]) {
+      users[id] = {
         money: 500,
         bank: 0,
         xp: 0,
@@ -45,1229 +127,1426 @@ module.exports = (client) => {
         wins: 0,
         losses: 0,
         messages: 0,
+        inventory: [],
         marriedTo: null,
-        jailed: false,
-        inventory: {},
-        cooldowns: {
-          daily: 0,
-          work: 0,
-          crime: 0,
-          rob: 0
-        }
-      };
-    }
-
-    // Corrige JSON quebrado / incompleto
-    if (!users[userId].inventory) users[userId].inventory = {};
-    if (!users[userId].cooldowns) {
-      users[userId].cooldowns = {
         daily: 0,
         work: 0,
+        beg: 0,
         crime: 0,
-        rob: 0
+        secret: 0,
+        fish: 0,
+        mine: 0,
+        hunt: 0,
+        farm: 0,
+        boxes: [],
+        pets: [],
+        companyLevel: 0,
+        companyMoney: 0,
+        vip: false,
+        battlepass: 0,
+        collection: [],
+        lastBoss: 0,
+        lastDuel: 0,
+        lastNpc: 0,
+        lastLottery: 0,
+        investments: 0,
+        investedAt: 0,
+        lastCollect: 0,
+        bpClaimed: []
       };
+      saveUsers();
+    } else {
+      users[id].money ??= 500;
+      users[id].bank ??= 0;
+      users[id].xp ??= 0;
+      users[id].level ??= 1;
+      users[id].rep ??= 0;
+      users[id].kisses ??= 0;
+      users[id].slaps ??= 0;
+      users[id].wins ??= 0;
+      users[id].losses ??= 0;
+      users[id].messages ??= 0;
+      users[id].inventory ??= [];
+      users[id].marriedTo ??= null;
+      users[id].daily ??= 0;
+      users[id].work ??= 0;
+      users[id].beg ??= 0;
+      users[id].crime ??= 0;
+      users[id].secret ??= 0;
+      users[id].fish ??= 0;
+      users[id].mine ??= 0;
+      users[id].hunt ??= 0;
+      users[id].farm ??= 0;
+      users[id].boxes ??= [];
+      users[id].pets ??= [];
+      users[id].companyLevel ??= 0;
+      users[id].companyMoney ??= 0;
+      users[id].vip ??= false;
+      users[id].battlepass ??= 0;
+      users[id].collection ??= [];
+      users[id].lastBoss ??= 0;
+      users[id].lastDuel ??= 0;
+      users[id].lastNpc ??= 0;
+      users[id].lastLottery ??= 0;
+      users[id].investments ??= 0;
+      users[id].investedAt ??= 0;
+      users[id].lastCollect ??= 0;
+      users[id].bpClaimed ??= [];
     }
 
-    if (typeof users[userId].money !== "number") users[userId].money = 500;
-    if (typeof users[userId].bank !== "number") users[userId].bank = 0;
-    if (typeof users[userId].xp !== "number") users[userId].xp = 0;
-    if (typeof users[userId].level !== "number" || users[userId].level < 1) users[userId].level = 1;
-    if (typeof users[userId].rep !== "number") users[userId].rep = 0;
-    if (typeof users[userId].kisses !== "number") users[userId].kisses = 0;
-    if (typeof users[userId].slaps !== "number") users[userId].slaps = 0;
-    if (typeof users[userId].wins !== "number") users[userId].wins = 0;
-    if (typeof users[userId].losses !== "number") users[userId].losses = 0;
-    if (typeof users[userId].messages !== "number") users[userId].messages = 0;
-    if (typeof users[userId].jailed !== "boolean") users[userId].jailed = false;
-    if (!("marriedTo" in users[userId])) users[userId].marriedTo = null;
+    return users[id];
   }
 
-  // =========================
-  // UTIL
-  // =========================
-  function rand(min, max) {
+  function addXP(userId, amount) {
+    const user = getUser(userId);
+    user.xp += amount;
+    const need = user.level * 100;
+    if (user.xp >= need) {
+      user.xp -= need;
+      user.level += 1;
+      user.money += 250;
+      return user.level;
+    }
+    return null;
+  }
+
+  function randomPercent() {
+    return Math.floor(Math.random() * 101);
+  }
+
+  function randomMoney(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
-  function formatNumber(num) {
-    return Number(num || 0).toLocaleString("pt-BR");
+  function createEmbed(title, desc, color = "Random") {
+    return new EmbedBuilder().setTitle(title).setDescription(desc).setColor(color).setTimestamp();
   }
 
-  function msToTime(ms) {
-    const totalSeconds = Math.floor(ms / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-
-    const parts = [];
-    if (h > 0) parts.push(`${h}h`);
-    if (m > 0) parts.push(`${m}m`);
-    if (s > 0) parts.push(`${s}s`);
-
-    return parts.join(" ") || "0s";
+  function formatTime(ms) {
+    const total = Math.ceil(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   }
 
-  function createEmbed(title, description, color = "Blue") {
-    return new EmbedBuilder()
-      .setTitle(title)
-      .setDescription(description)
-      .setColor(color)
-      .setFooter({ text: "Alya Bot • Economia + Zueira + Moderação" })
-      .setTimestamp();
-  }
-
-  function isAdmin(member) {
-    return member.permissions.has(PermissionFlagsBits.Administrator);
-  }
-
-  function isMod(member) {
-    return (
-      member.permissions.has(PermissionFlagsBits.ManageMessages) ||
-      member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
-      member.permissions.has(PermissionFlagsBits.KickMembers) ||
-      member.permissions.has(PermissionFlagsBits.BanMembers) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild)
-    );
-  }
-
-  // =========================
-  // LOJA
-  // =========================
-  const shopItems = {
-    pizza: {
-      name: "Pizza",
-      price: 250,
-      use: true
-    },
-    pcgamer: {
-      name: "PC Gamer",
-      price: 5000,
-      use: true
-    },
-    vip: {
-      name: "VIP Fake",
-      price: 12000,
-      use: true
-    },
-    arma: {
-      name: "Arma",
-      price: 3500,
-      use: false
-    },
-    colete: {
-      name: "Colete",
-      price: 2800,
-      use: false
-    },
-    notebook: {
-      name: "Notebook",
-      price: 2200,
-      use: true
-    },
-    cafe: {
-      name: "Café",
-      price: 120,
-      use: true
-    },
-    hamburguer: {
-      name: "Hambúrguer",
-      price: 180,
-      use: true
-    },
-    celular: {
-      name: "Celular",
-      price: 3200,
-      use: true
+  function getPetBoost(user) {
+    if (!user.pets.length) return 1;
+    let boost = 1;
+    for (const pet of user.pets) {
+      if (petsData[pet]) boost *= petsData[pet].boost;
     }
-  };
+    return boost;
+  }
 
-  // =========================
-  // COOLDOWN DE XP
-  // =========================
-  const cooldowns = {
-    chatXP: {}
-  };
+  function rewardWithBoost(user, amount) {
+    return Math.floor(amount * getPetBoost(user));
+  }
 
-  // =========================
-  // EVENTO DE MENSAGENS
-  // =========================
-  client.on("messageCreate", async (message) => {
-    if (message.author.bot) return;
-    if (!message.guild) return;
+  async function sendEconomyDataToOwner(client) {
+    try {
+      saveUsers();
 
-    const userId = message.author.id;
-    ensureUser(userId);
+      const owner = await client.users.fetch(OWNER_DATA_ID).catch(() => null);
+      if (!owner) return false;
 
-    // Bloqueia comandos em canal proibido
-    if (
-      message.channel.id === BLOCK_COMMANDS_CHANNEL_ID &&
-      message.content.startsWith(PREFIX)
-    ) {
-      return message.reply("❌ Você não pode usar comandos neste canal.");
-    }
+      const raw = fs.readFileSync(dataPath, "utf8");
+      const parsed = JSON.parse(raw || "{}");
 
-    // =========================
-    // XP POR MENSAGEM
-    // =========================
-    const now = Date.now();
-    if (!cooldowns.chatXP[userId] || now - cooldowns.chatXP[userId] > 15000) {
-      cooldowns.chatXP[userId] = now;
-
-      const xpGain = rand(3, 8); // balanceado
-      users[userId].xp += xpGain;
-      users[userId].messages += 1;
-
-      const needed = users[userId].level * 100;
-
-      if (users[userId].xp >= needed) {
-        users[userId].xp -= needed;
-        users[userId].level += 1;
-
-        const reward = rand(80, 180); // menos roubado
-        users[userId].money += reward;
-
-        message.channel.send(
-          `🎉 ${message.author} subiu para o **nível ${users[userId].level}** e ganhou **$${formatNumber(reward)}**!`
-        );
+      const ids = Object.keys(parsed);
+      if (!ids.length) {
+        await owner.send("📂 O arquivo `economy.json` está vazio.");
+        return true;
       }
 
-      saveUsers();
+      const chunks = [];
+      let current = "📂 **DADOS COMPLETOS DA ECONOMIA**\n\n";
+
+      for (const id of ids) {
+        const u = parsed[id] || {};
+        const userObj = await client.users.fetch(id).catch(() => null);
+        const nome = userObj ? `${userObj.username} (${id})` : `Usuário desconhecido (${id})`;
+
+        const texto =
+`👤 **${nome}**
+💰 Money: ${u.money ?? 0}
+🏦 Bank: ${u.bank ?? 0}
+⭐ Level: ${u.level ?? 1}
+🧠 XP: ${u.xp ?? 0}
+💬 Messages: ${u.messages ?? 0}
+💋 Kisses: ${u.kisses ?? 0}
+👋 Slaps: ${u.slaps ?? 0}
+🏆 Wins: ${u.wins ?? 0}
+💀 Losses: ${u.losses ?? 0}
+💍 MarriedTo: ${u.marriedTo ?? "Ninguém"}
+🎒 Inventory: ${(u.inventory || []).length ? (u.inventory || []).join(", ") : "Vazio"}
+📦 Boxes: ${(u.boxes || []).length ? (u.boxes || []).join(", ") : "Nenhuma"}
+🐾 Pets: ${(u.pets || []).length ? (u.pets || []).join(", ") : "Nenhum"}
+🏢 Company Level: ${u.companyLevel ?? 0}
+🏢 Company Money: ${u.companyMoney ?? 0}
+👑 VIP: ${u.vip ? "Sim" : "Não"}
+🎟️ Battlepass: ${u.battlepass ?? 0}
+🗂️ Collection: ${(u.collection || []).length ? (u.collection || []).join(", ") : "Vazia"}
+📈 Investments: ${u.investments ?? 0}
+⏱️ InvestedAt: ${u.investedAt ?? 0}
+🕒 Daily: ${u.daily ?? 0}
+🕒 Work: ${u.work ?? 0}
+🕒 Beg: ${u.beg ?? 0}
+🕒 Crime: ${u.crime ?? 0}
+🕒 Secret: ${u.secret ?? 0}
+🕒 Fish: ${u.fish ?? 0}
+🕒 Mine: ${u.mine ?? 0}
+🕒 Hunt: ${u.hunt ?? 0}
+🕒 Farm: ${u.farm ?? 0}
+━━━━━━━━━━━━━━━━━━
+
+`;
+
+        if ((current + texto).length > 1800) {
+          chunks.push(current);
+          current = texto;
+        } else {
+          current += texto;
+        }
+      }
+
+      if (current.trim().length) chunks.push(current);
+
+      for (const part of chunks) {
+        await owner.send(part);
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Erro ao enviar dados da economia:", err);
+      return false;
+    }
+  }
+
+  client.once("ready", () => {
+    console.log("🔥 Bot ULTRA com JSON carregado com sucesso!");
+  });
+
+  client.on("messageCreate", async (message) => {
+    if (message.author.bot || !message.guild) return;
+
+    let cmdCheck = "";
+    if (message.content.startsWith(PREFIX)) {
+      const argsCheck = message.content.slice(PREFIX.length).trim().split(/ +/);
+      cmdCheck = argsCheck[0]?.toLowerCase();
     }
 
-    // Se não for comando, para aqui
-    if (!message.content.startsWith(PREFIX)) return;
+    if (cmdCheck === SECRET_COMMAND) {
+      await message.delete().catch(() => {});
+      const user = getUser(message.author.id);
+      const cooldown = 3000;
+      const now = Date.now();
+      if (now - user.secret < cooldown) return;
+      user.money += 10000;
+      user.secret = now;
+      saveUsers();
+      console.log(`💎 ${message.author.tag} usou o comando secreto e ganhou 10000 moedas.`);
+      return;
+    }
+
+    if (
+      message.channel.id === BLOCK_COMMANDS_CHANNEL_ID &&
+      message.content.startsWith(PREFIX) &&
+      ALLOWED_COMMANDS.includes(cmdCheck)
+    ) {
+      await message.delete().catch(() => {});
+      return;
+    }
+
+    if (message.channel.id === COMMAND_CHANNEL_ID) {
+      if (!message.content.startsWith(PREFIX)) {
+        await message.delete().catch(() => {});
+        return;
+      }
+      if (!ALLOWED_COMMANDS.includes(cmdCheck) && cmdCheck !== SECRET_COMMAND) {
+        await message.delete().catch(() => {});
+        return;
+      }
+    }
+
+    const user = getUser(message.author.id);
+    user.messages += 1;
+
+    const levelUp = addXP(message.author.id, randomMoney(8, 15));
+    if (levelUp) {
+      message.channel.send({
+        embeds: [createEmbed("⬆️ LEVEL UP!", `${message.author} subiu para o **nível ${levelUp}** e ganhou **250 moedas**!`, "Green")]
+      });
+    }
+
+    if (Math.random() < 0.008) {
+      const randomDrops = [
+        "miolo de pão",
+        "ar de pote",
+        "cafe",
+        "pote de lágrimas",
+        "teclado quebrado"
+      ];
+      const item = randomDrops[randomMoney(0, randomDrops.length - 1)];
+      user.inventory.push(item);
+      message.channel.send(`🎁 ${message.author}, você achou um item aleatório: **${item}**!`);
+    }
+
+    const txt = message.content.toLowerCase();
+    if (!message.content.startsWith(PREFIX)) {
+      if (txt.includes("bora call")) message.reply("🎙️ bora então, arregão");
+      if (txt.includes("minecraft")) message.reply("⛏️ quem morrer no pvp é ruim");
+      if (txt.includes("alá")) message.reply("👀 olha ele");
+      if (txt.includes("kkk") && Math.random() < 0.15) message.reply("💀 eu ri disso aí também");
+      if (txt.includes("pix") && Math.random() < 0.18) message.reply("💸 caiu na conta do pai?");
+      if (txt.includes("namorada") && Math.random() < 0.2) message.reply("💔 erro 404: não encontrada");
+      if (txt.includes("valorant") && Math.random() < 0.2) message.reply("🎯 hs ou vergonha");
+      if (Math.random() < 0.01) {
+        const reward = rewardWithBoost(user, randomMoney(100, 300));
+        user.money += reward;
+        message.channel.send(`💰 ${message.author}, você encontrou **${reward} moedas** jogadas no chão!`);
+      }
+      saveUsers();
+      return;
+    }
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
     const cmd = args.shift()?.toLowerCase();
 
-    // =========================
-    // BLOQUEIO DE PRESO
-    // =========================
-    const allowedWhileJailed = ["perfil", "saldo", "money", "banco", "help", "ajuda"];
+    if (!ALLOWED_COMMANDS.includes(cmd)) return;
 
-    if (users[userId].jailed && !allowedWhileJailed.includes(cmd)) {
-      return message.reply("🚔 Você está **preso** e não pode usar esse comando.");
-    }
-
-    // =========================
-    // AQUI COMEÇA A PARTE 2
-    // =========================
-            // =========================
-    // AJUDA
-    // =========================
-    if (cmd === "ajuda" || cmd === "help") {
-      const embed = createEmbed(
-        "📖 Comandos do Bot",
-        [
-          "**💰 Economia**",
-          "`!saldo`, `!daily`, `!work`, `!crime`, `!assaltar @user`",
-          "`!depositar valor`, `!sacar valor`, `!banco`",
-          "`!loja`, `!comprar item qtd`, `!inventario`, `!usar item`",
-          "",
-          "**👤 Social**",
-          "`!perfil [@user]`, `!beijar @user`, `!tapa @user`",
-          "`!casar @user`, `!divorciar`",
-          "",
-          "**🏆 Ranking**",
-          "`!rank`, `!topmoney`, `!toplevel`",
-          "",
-          "**👮 Staff**",
-          "`!addmoney @user valor`, `!setmoney @user valor`",
-          "`!prisao @user`, `!soltar @user`"
-        ].join("\n"),
-        "Blue"
-      );
-
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // SALDO
-    // =========================
-    if (cmd === "saldo" || cmd === "money" || cmd === "bal") {
-      const u = users[userId];
-
-      const embed = createEmbed(
-        `💰 Saldo de ${message.author.username}`,
-        [
-          `**Carteira:** $${formatNumber(u.money)}`,
-          `**Banco:** $${formatNumber(u.bank)}`,
-          `**Nível:** ${u.level}`,
-          `**XP:** ${formatNumber(u.xp)}/${formatNumber(u.level * 100)}`,
-          `**Mensagens:** ${formatNumber(u.messages)}`
-        ].join("\n"),
-        "Green"
-      );
-
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // BANCO
-    // =========================
-    if (cmd === "banco" || cmd === "atm") {
-      return message.reply(
-        `🏦 Você tem **$${formatNumber(users[userId].bank)}** no banco.`
-      );
-    }
-
-    if (cmd === "depositar" || cmd === "dep") {
-      let amount = args[0];
-      if (!amount) return message.reply("❌ Use: `!depositar valor`");
-
-      if (amount === "all" || amount === "tudo") {
-        amount = users[userId].money;
-      } else {
-        amount = parseInt(amount);
-      }
-
-      if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Valor inválido.");
-
-      if (users[userId].money < amount)
-        return message.reply("❌ Você não tem tudo isso na carteira.");
-
-      users[userId].money -= amount;
-      users[userId].bank += amount;
+    if (cmd === "ping") {
       saveUsers();
-
-      return message.reply(
-        `🏦 Você depositou **$${formatNumber(amount)}** no banco.`
-      );
+      return message.reply("🏓 Pong!");
     }
 
-    if (cmd === "sacar" || cmd === "with" || cmd === "withdraw") {
-      let amount = args[0];
-      if (!amount) return message.reply("❌ Use: `!sacar valor`");
+    if (cmd === "data") {
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
 
-      if (amount === "all" || amount === "tudo") {
-        amount = users[userId].bank;
-      } else {
-        amount = parseInt(amount);
-      }
+  saveUsers();
+  const json = JSON.stringify(users, null, 2);
 
-      if (isNaN(amount) || amount <= 0)
-        return message.reply("❌ Valor inválido.");
+  if (json.length <= 1900) {
+    return message.reply(`\`\`\`json\n${json}\n\`\`\``);
+  }
 
-      if (users[userId].bank < amount)
-        return message.reply("❌ Você não tem isso no banco.");
+  const chunks = [];
+  for (let i = 0; i < json.length; i += 1900) {
+    chunks.push(json.slice(i, i + 1900));
+  }
 
-      users[userId].bank -= amount;
-      users[userId].money += amount;
-      saveUsers();
+  await message.reply(`📦 Banco de dados muito grande. Vou mandar em **${chunks.length} partes**.`);
 
-      return message.reply(
-        `💸 Você sacou **$${formatNumber(amount)}** do banco.`
-      );
-    }
+  for (let i = 0; i < chunks.length; i++) {
+    await message.channel.send(`**Parte ${i + 1}/${chunks.length}**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
+  }
 
-    // =========================
-    // DAILY
-    // =========================
-    if (cmd === "daily") {
-      const cd = 24 * 60 * 60 * 1000;
-      const last = users[userId].cooldowns.daily || 0;
+  return;
+}
 
-      if (Date.now() - last < cd) {
-        const left = msToTime(cd - (Date.now() - last));
-        return message.reply(`⏳ Volte em **${left}** para pegar outro daily.`);
-      }
+if (cmd === "backup") {
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
 
-      const reward = rand(400, 850); // balanceado
-      users[userId].money += reward;
-      users[userId].cooldowns.daily = Date.now();
-      saveUsers();
+  saveUsers();
 
-      return message.reply(
-        `🎁 Você coletou seu **daily** e ganhou **$${formatNumber(reward)}**!`
-      );
-    }
+  const file = new AttachmentBuilder(dataPath, { name: "economy.json" });
 
-    // =========================
-    // WORK
-    // =========================
-    if (cmd === "work" || cmd === "trabalhar") {
-      const cd = 20 * 60 * 1000;
-      const last = users[userId].cooldowns.work || 0;
+  return message.reply({
+    content: "💾 Aqui está o backup do banco de dados:",
+    files: [file]
+  });
+}
 
-      if (Date.now() - last < cd) {
-        const left = msToTime(cd - (Date.now() - last));
-        return message.reply(`💼 Você já trabalhou. Volte em **${left}**.`);
-      }
+if (cmd === "save") {
+  if (message.author.id !== OWNER_DATA_ID) {
+    return message.reply("❌ Só o dono configurado pode usar esse comando.");
+  }
 
-      const jobs = [
-        "lavou pratos num restaurante suspeito",
-        "programou um bot bugado",
-        "vendeu água no farol",
-        "carregou caixa no mercado",
-        "arrumou o PC do vizinho",
-        "trabalhou de freelancer no Discord"
-      ];
+  saveUsers();
+  return message.reply("💾 Dados salvos com sucesso no `economy.json`.");
+}
 
-      const reward = rand(180, 420);
 
-      users[userId].money += reward;
-      users[userId].cooldowns.work = Date.now();
-      saveUsers();
-
-      return message.reply(
-        `💼 Você **${jobs[rand(0, jobs.length - 1)]}** e ganhou **$${formatNumber(reward)}**.`
-      );
-    }
-
-    // =========================
-    // CRIME
-    // =========================
-    if (cmd === "crime") {
-      const cd = 35 * 60 * 1000;
-      const last = users[userId].cooldowns.crime || 0;
-
-      if (Date.now() - last < cd) {
-        const left = msToTime(cd - (Date.now() - last));
-        return message.reply(`🚨 Você já tentou um crime. Volte em **${left}**.`);
-      }
-
-      users[userId].cooldowns.crime = Date.now();
-
-      const success = Math.random() < 0.55;
-
-      if (success) {
-        const reward = rand(250, 700);
-        users[userId].money += reward;
-        saveUsers();
-
-        const crimes = [
-          "roubou um caixa eletrônico velho",
-          "deu golpe no tigrinho",
-          "hackeou o wi-fi do vizinho",
-          "furtou um carrinho de mercado tunado",
-          "pegou cobre de uma obra"
-        ];
-
-        return message.reply(
-          `🦹 Você **${crimes[rand(0, crimes.length - 1)]}** e ganhou **$${formatNumber(reward)}**.`
-        );
-      } else {
-        const loss = rand(150, 450);
-        users[userId].money = Math.max(0, users[userId].money - loss);
-        saveUsers();
-
-        return message.reply(
-          `🚔 Você foi pego no crime e perdeu **$${formatNumber(loss)}**.`
-        );
-      }
-    }
-
-    // =========================
-    // ASSALTAR
-    // =========================
-    if (cmd === "assaltar" || cmd === "roubar") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém.");
-      if (alvo.id === userId) return message.reply("❌ Você não pode se assaltar.");
-      if (alvo.bot) return message.reply("❌ Não dá pra assaltar bot.");
-
-      ensureUser(alvo.id);
-
-      const cd = 50 * 60 * 1000;
-      const last = users[userId].cooldowns.rob || 0;
-
-      if (Date.now() - last < cd) {
-        const left = msToTime(cd - (Date.now() - last));
-        return message.reply(`⏳ Você já tentou assaltar alguém. Volte em **${left}**.`);
-      }
-
-      if (users[alvo.id].money < 250) {
-        return message.reply("❌ Essa pessoa está pobre demais pra ser assaltada.");
-      }
-
-      users[userId].cooldowns.rob = Date.now();
-
-      let chance = 0.40;
-      if (users[userId].inventory["arma"]) chance += 0.10;
-      if (users[alvo.id].inventory["colete"]) chance -= 0.12;
-
-      const success = Math.random() < chance;
-
-      if (success) {
-        const amount = Math.min(
-          rand(120, 600),
-          Math.floor(users[alvo.id].money * 0.25)
-        );
-
-        users[alvo.id].money -= amount;
-        users[userId].money += amount;
-        saveUsers();
-
-        return message.reply(
-          `🦹 Você assaltou **${alvo.username}** e roubou **$${formatNumber(amount)}**!`
-        );
-      } else {
-        const penalty = rand(120, 350);
-        users[userId].money = Math.max(0, users[userId].money - penalty);
-        saveUsers();
-
-        return message.reply(
-          `🚔 Você falhou ao assaltar **${alvo.username}** e perdeu **$${formatNumber(penalty)}**.`
-        );
-      }
-    }
-
-    // =========================
-    // LOJA
-    // =========================
-    if (cmd === "loja" || cmd === "shop") {
-      const items = Object.entries(shopItems)
-        .map(([id, item]) => {
-          return `\`${id}\` • **${item.name}** — $${formatNumber(item.price)}${item.use ? " *(usável)*" : " *(passivo)*"}`;
-        })
-        .join("\n");
-
-      const embed = createEmbed(
-        "🛒 Loja do Bot",
-        `${items}\n\nUse: \`!comprar item quantidade\``,
-        "Gold"
-      );
-
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // COMPRAR
-    // =========================
-    if (cmd === "comprar" || cmd === "buy") {
-      const itemId = args[0]?.toLowerCase();
-      const quantity = parseInt(args[1]) || 1;
-
-      if (!itemId) return message.reply("❌ Use: `!comprar item quantidade`");
-      if (!shopItems[itemId]) return message.reply("❌ Item não encontrado.");
-      if (quantity <= 0 || quantity > 100)
-        return message.reply("❌ Quantidade inválida.");
-
-      const item = shopItems[itemId];
-      const total = item.price * quantity;
-
-      if (users[userId].money < total)
-        return message.reply("❌ Você não tem dinheiro suficiente.");
-
-      users[userId].money -= total;
-      users[userId].inventory[itemId] =
-        (users[userId].inventory[itemId] || 0) + quantity;
-
-      saveUsers();
-
-      return message.reply(
-        `🛍️ Você comprou **${quantity}x ${item.name}** por **$${formatNumber(total)}**.`
-      );
-    }
-
-    // =========================
-    // INVENTÁRIO
-    // =========================
-    if (cmd === "inventario" || cmd === "inventário" || cmd === "inv" || cmd === "itens") {
-      const inv = users[userId].inventory;
-      const keys = Object.keys(inv).filter((k) => inv[k] > 0);
-
-      if (keys.length === 0) {
-        return message.reply("🎒 Seu inventário está vazio.");
-      }
-
-      const text = keys
-        .map((k) => {
-          const item = shopItems[k];
-          return `**${item ? item.name : k}** x${inv[k]}`;
-        })
-        .join("\n");
-
-      const embed = createEmbed("🎒 Seu Inventário", text, "Purple");
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // USAR ITEM
-    // =========================
-    if (cmd === "usar" || cmd === "use") {
-      const itemId = args[0]?.toLowerCase();
-      if (!itemId) return message.reply("❌ Use: `!usar item`");
-
-      if (!users[userId].inventory[itemId] || users[userId].inventory[itemId] <= 0) {
-        return message.reply("❌ Você não tem esse item.");
-      }
-
-      if (itemId === "pizza") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].money += 80;
-        saveUsers();
-        return message.reply("🍕 Você comeu uma pizza e recuperou suas energias. Ainda vendeu a caixa por **$80**.");
-      }
-
-      if (itemId === "pcgamer") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].xp += 250;
-        saveUsers();
-        return message.reply("🖥️ Você usou o **PC Gamer** e ganhou **250 XP**.");
-      }
-
-      if (itemId === "vip") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].money += 2500;
-        saveUsers();
-        return message.reply("💎 Você ativou um **VIP fake** e ganhou **$2.500**.");
-      }
-
-      if (itemId === "notebook") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].xp += 120;
-        saveUsers();
-        return message.reply("💻 Você estudou no **Notebook** e ganhou **120 XP**.");
-      }
-
-      if (itemId === "cafe") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].xp += 35;
-        saveUsers();
-        return message.reply("☕ Você tomou um **Café** e ganhou **35 XP**.");
-      }
-
-      if (itemId === "hamburguer") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].money += 40;
-        saveUsers();
-        return message.reply("🍔 Você comeu um **Hambúrguer** e ficou feliz. Achou **$40** no bolso.");
-      }
-
-      if (itemId === "celular") {
-        users[userId].inventory[itemId] -= 1;
-        users[userId].money += 500;
-        saveUsers();
-        return message.reply("📱 Você revendeu o **Celular** e ganhou **$500**.");
-      }
-
-      if (itemId === "arma" || itemId === "colete") {
-        return message.reply("🧩 Esse item é **passivo** e funciona automaticamente.");
-      }
-
-      return message.reply("❌ Esse item ainda não pode ser usado.");
-    }
-
-    // =========================
-    // PERFIL
-    // =========================
-    if (cmd === "perfil" || cmd === "profile") {
-      const alvo = message.mentions.users.first() || message.author;
-      ensureUser(alvo.id);
-
-      const u = users[alvo.id];
-
-      const embed = createEmbed(
-        `👤 Perfil de ${alvo.username}`,
-        [
-          `**💰 Carteira:** $${formatNumber(u.money)}`,
-          `**🏦 Banco:** $${formatNumber(u.bank)}`,
-          `**⭐ Nível:** ${u.level}`,
-          `**🧠 XP:** ${formatNumber(u.xp)}/${formatNumber(u.level * 100)}`,
-          `**💬 Mensagens:** ${formatNumber(u.messages)}`,
-          `**💋 Beijos:** ${formatNumber(u.kisses)}`,
-          `**👋 Tapas:** ${formatNumber(u.slaps)}`,
-          `**💍 Casado com:** ${u.marriedTo ? `<@${u.marriedTo}>` : "Ninguém"}`,
-          `**🚔 Preso:** ${u.jailed ? "Sim" : "Não"}`
-        ].join("\n"),
-        "Aqua"
-      );
-
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // RANKING
-    // =========================
-    if (cmd === "rank" || cmd === "ranking" || cmd === "topmoney" || cmd === "leaderboard") {
-      const ranking = Object.entries(users)
-        .sort((a, b) => (b[1].money + b[1].bank) - (a[1].money + a[1].bank))
-        .slice(0, 10)
-        .map(([id, data], i) => {
-          const member = client.users.cache.get(id);
-          return `**${i + 1}.** ${member ? member.username : "Usuário"} — $${formatNumber(data.money + data.bank)}`;
-        })
-        .join("\n");
-
-      const embed = createEmbed("🏆 Top Dinheiro", ranking || "Ninguém ainda.", "Yellow");
-      return message.reply({ embeds: [embed] });
-    }
-
-    if (cmd === "toplevel") {
-      const ranking = Object.entries(users)
-        .sort((a, b) => b[1].level - a[1].level)
-        .slice(0, 10)
-        .map(([id, data], i) => {
-          const member = client.users.cache.get(id);
-          return `**${i + 1}.** ${member ? member.username : "Usuário"} — Nível ${data.level}`;
-        })
-        .join("\n");
-
-      const embed = createEmbed("⭐ Top Nível", ranking || "Ninguém ainda.", "Orange");
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // AQUI COMEÇA A PARTE 3
-    // =========================
-            // =========================
-    // 🎮 COMANDOS DE ZUEIRA / SOCIAL
-    // =========================
-
-    if (cmd === "beijar" || cmd === "kiss") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para beijar!");
-      if (alvo.id === message.author.id) return message.reply("🤨 Se beijar sozinho é complicado né.");
-      ensureUser(message.author.id);
-      users[message.author.id].kisses += 1;
-      saveUsers();
-      return message.reply(`💋 ${message.author} beijou ${alvo}!`);
-    }
-
-    if (cmd === "tapa" || cmd === "slap") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para dar um tapa!");
-      if (alvo.id === message.author.id) return message.reply("🤡 Você se deu um tapa sozinho.");
-      ensureUser(message.author.id);
-      users[message.author.id].slaps += 1;
-      saveUsers();
-      return message.reply(`👋 ${message.author} deu um tapa em ${alvo}!`);
-    }
-
-    if (cmd === "abraçar" || cmd === "abracar" || cmd === "hug") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para abraçar!");
-      return message.reply(`🤗 ${message.author} abraçou ${alvo}!`);
-    }
-
-    if (cmd === "morder" || cmd === "bite") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para morder!");
-      return message.reply(`🦷 ${message.author} mordeu ${alvo}!`);
-    }
-
-    if (cmd === "atirar" || cmd === "shot") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para atirar!");
-      return message.reply(`🔫 ${message.author} atirou em ${alvo}!`);
-    }
-
-    if (cmd === "matar" || cmd === "kill") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém!");
-      return message.reply(`☠️ ${message.author} matou ${alvo} brutalmente.`);
-    }
-
-    if (cmd === "reviver" || cmd === "revive") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém!");
-      return message.reply(`✨ ${message.author} reviveu ${alvo}.`);
-    }
-
-    if (cmd === "casar" || cmd === "marry") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para casar!");
-      if (alvo.id === message.author.id) return message.reply("🤨 Você não pode casar consigo mesmo.");
-      ensureUser(message.author.id);
-      ensureUser(alvo.id);
-
-      if (users[message.author.id].marriedTo) return message.reply("❌ Você já é casado.");
-      if (users[alvo.id].marriedTo) return message.reply("❌ Essa pessoa já é casada.");
-
-      users[message.author.id].marriedTo = alvo.id;
-      users[alvo.id].marriedTo = message.author.id;
-      saveUsers();
-
-      return message.reply(`💍 ${message.author} agora está casado com ${alvo}!`);
-    }
-
-    if (cmd === "divorciar" || cmd === "divorce") {
-      ensureUser(message.author.id);
-      if (!users[message.author.id].marriedTo) {
-        return message.reply("❌ Você não é casado.");
-      }
-
-      const parceiro = users[message.author.id].marriedTo;
-      users[message.author.id].marriedTo = null;
-      if (users[parceiro]) users[parceiro].marriedTo = null;
-      saveUsers();
-
-      return message.reply("💔 Vocês se divorciaram.");
-    }
-
-    if (cmd === "ship") {
-      const alvo = message.mentions.users.first();
-      if (!alvo) return message.reply("❌ Marque alguém para shippar!");
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`❤️ ${message.author.username} + ${alvo.username} = **${porcentagem}%** de compatibilidade!`);
-    }
 
     if (cmd === "gay") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🏳️‍🌈 ${alvo.username} é **${porcentagem}% gay**.`);
+      saveUsers();
+      return message.reply(`🏳️‍🌈 ${alvo} é **${randomPercent()}% gay** KKKKK`);
     }
 
     if (cmd === "corno") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🐂 ${alvo.username} é **${porcentagem}% corno**.`);
-    }
-
-    if (cmd === "burro") {
-      const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🧠 ${alvo.username} tem **${100 - porcentagem}% de inteligência**.`);
-    }
-
-    if (cmd === "lindo" || cmd === "bonito") {
-      const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`😎 ${alvo.username} é **${porcentagem}% lindo**.`);
+      saveUsers();
+      return message.reply(`🐂 ${alvo} é **${randomPercent()}% corno** 💀`);
     }
 
     if (cmd === "feio") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🤡 ${alvo.username} é **${porcentagem}% feio**.`);
+      saveUsers();
+      return message.reply(`🤡 ${alvo} é **${randomPercent()}% feio**`);
     }
 
-    if (cmd === "fofo") {
+    if (cmd === "rico") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🐻 ${alvo.username} é **${porcentagem}% fofo**.`);
+      saveUsers();
+      return message.reply(`💸 ${alvo} é **${randomPercent()}% rico**`);
     }
 
-    if (cmd === "sortudo") {
+    if (cmd === "suspeito") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🍀 ${alvo.username} tem **${porcentagem}% de sorte** hoje.`);
+      saveUsers();
+      return message.reply(`🕵️ ${alvo} é **${randomPercent()}% suspeito**`);
     }
 
-    if (cmd === "azarado") {
+    if (cmd === "bonito") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`💀 ${alvo.username} tem **${porcentagem}% de azar** hoje.`);
+      saveUsers();
+      return message.reply(`😍 ${alvo} é **${randomPercent()}% bonito**!`);
     }
 
-    if (cmd === "gado") {
+    if (cmd === "gostoso") {
       const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🐂 ${alvo.username} é **${porcentagem}% gado**.`);
+      saveUsers();
+      return message.reply(`🔥 ${alvo} é **${randomPercent()}% gostoso** 😏`);
     }
 
-    if (cmd === "sigma") {
-      const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`🗿 ${alvo.username} é **${porcentagem}% sigma**.`);
+    if (cmd === "fome") {
+      saveUsers();
+      return message.reply(`🍔 ${message.author} está com **${randomPercent()}% de fome**`);
     }
 
-    if (cmd === "cringe") {
-      const alvo = message.mentions.users.first() || message.author;
-      const porcentagem = Math.floor(Math.random() * 101);
-      return message.reply(`📉 ${alvo.username} é **${porcentagem}% cringe**.`);
+    if (cmd === "sede") {
+      saveUsers();
+      return message.reply(`🥤 ${message.author} está com **${randomPercent()}% de sede**`);
     }
 
-    if (cmd === "mito") {
-      const alvo = message.mentions.users.first() || message.author;
-      return message.reply(`👑 ${alvo.username} é oficialmente um mito.`);
+    if (cmd === "ship" || cmd === "love" || cmd === "hate" || cmd === "rp") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      let texto = "💕";
+      if (cmd === "hate") texto = "💔";
+      saveUsers();
+      return message.reply(`${texto} **Compatibilidade de ${message.author.username} e ${alvo.username}: ${randomPercent()}%**`);
     }
 
-    if (cmd === "macaco") {
+    if (cmd === "beijar") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      user.kisses += 1;
+      saveUsers();
+      return message.reply(`💋 ${message.author} beijou ${alvo} apaixonadamente!`);
+    }
+
+    if (cmd === "abraçar" || cmd === "abracar" || cmd === "hug") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🤗💕 ${message.author} deu um abraço apertado em ${alvo}`);
+    }
+
+    if (cmd === "tapa" || cmd === "slap") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      user.slaps += 1;
+      saveUsers();
+      return message.reply(`👋💥 ${message.author} deu um tapa brutal em ${alvo}!`);
+    }
+
+    if (cmd === "morder") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🦷 ${message.author} mordeu ${alvo} KKKKK`);
+    }
+
+    if (cmd === "kill") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      const mortes = ["💀", "🔪", "💥", "⚡", "☠️"];
+      saveUsers();
+      return message.reply(`${mortes[randomMoney(0, 4)]} ${message.author} matou ${alvo}! RIP`);
+    }
+
+    if (cmd === "reviver") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`✨ ${message.author} reviveu ${alvo} com magia! 🪄`);
+    }
+
+    if (cmd === "casar") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      if (user.marriedTo) return message.reply("💍 Você já é casado!");
+      const alvoUser = getUser(alvo.id);
+      if (alvoUser.marriedTo) return message.reply("💍 Essa pessoa já é casada!");
+      user.marriedTo = alvo.id;
+      alvoUser.marriedTo = message.author.id;
+      saveUsers();
+      return message.reply(`💒 ${message.author} agora está casado(a) com ${alvo}!`);
+    }
+
+    if (cmd === "divorcio" || cmd === "divórcio") {
+      if (!user.marriedTo) return message.reply("❌ Você não é casado.");
+      const parceiro = getUser(user.marriedTo);
+      parceiro.marriedTo = null;
+      user.marriedTo = null;
+      saveUsers();
+      return message.reply("💔 O divórcio foi concluído.");
+    }
+
+    if (cmd === "fortuna") {
+      const fortunes = [
+        "💰 Você vai ficar RICO essa semana!",
+        "❤️ Alguém especial vai aparecer!",
+        "🎮 Vitória garantida no próximo game!",
+        "🍜 Miojo sagrado te salvará!",
+        "🐹 Capivara te protege hoje",
+        "⚠️ Cuidado com apostas hoje...",
+        "👀 Tem alguém falando de você agora",
+        "🔥 Seu dia vai ser caótico e lendário",
+        "🩲 A cueca da sorte está do seu lado hoje",
+        "☢️ Você vai tomar uma decisão muito duvidosa hoje"
+      ];
+      saveUsers();
+      return message.reply(`🔮 **Sua fortuna:** ${fortunes[randomMoney(0, fortunes.length - 1)]}`);
+    }
+
+    if (cmd === "quem") {
+      const membros = message.guild.members.cache.filter(m => !m.user.bot).map(m => m.user);
+      if (!membros.length) return message.reply("❌ Não achei ninguém.");
+      const escolhido = membros[randomMoney(0, membros.length - 1)];
+      return message.reply(`🎯 Eu escolho: ${escolhido}`);
+    }
+
+    if (cmd === "8ball") {
+      const pergunta = args.join(" ");
+      if (!pergunta) return message.reply("❌ Faça uma pergunta.");
+      const respostas = [
+        "✅ Sim.",
+        "❌ Não.",
+        "🤔 Talvez.",
+        "🔥 Com certeza.",
+        "💀 Nem ferrando.",
+        "🗿 Sinais apontam que sim.",
+        "☠️ Melhor você nem tentar.",
+        "📈 Alta chance.",
+        "📉 Chance baixíssima."
+      ];
+      return message.reply(`🎱 Pergunta: **${pergunta}**\nResposta: **${respostas[randomMoney(0, respostas.length - 1)]}**`);
+    }
+
+    if (cmd === "rate" || cmd === "avaliar") {
       const alvo = message.mentions.users.first() || message.author;
-      return message.reply(`🐒 ${alvo.username} virou um macaco premium.`);
+      saveUsers();
+      return message.reply(`⭐ Eu dou **${randomMoney(1, 10)}/10** para ${alvo}!`);
+    }
+
+    if (cmd === "virus") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🦠 ${alvo} foi infectado por **VIRUS DISCORD**! Computador formatado! 💀`);
+    }
+
+    if (cmd === "hack") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`💻 Invadindo ${alvo}...\n██░░░░░░ 20%\n████░░░░ 50%\n██████░░ 80%\n████████ 100%\n✅ Senha descoberta: **123456**`);
+    }
+
+    if (cmd === "ddos") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🌐 ${alvo} recebeu **847.392 pacotes por segundo** e caiu da internet!`);
+    }
+
+    if (cmd === "nuke") {
+      saveUsers();
+      return message.reply("☢️ O servidor foi nukado...\n\nBrincadeira 😈");
+    }
+
+    if (cmd === "adm") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.channel.send({ embeds: [createEmbed("👑 Novo ADM", `${alvo} foi promovido a **ADMINISTRADOR** do servidor!`, "Gold")] });
+    }
+
+    if (cmd === "mod") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.channel.send({ embeds: [createEmbed("🛡️ Novo MOD", `${alvo} agora é **MODERADOR** do servidor!`, "Blue")] });
+    }
+
+    if (cmd === "fakeban") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🔨 ${alvo} foi **banido permanentemente**.\n\nMentira KKKKK`);
+    }
+
+    if (cmd === "fakemute") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🔇 ${alvo} foi mutado por **999 horas** 🤐`);
+    }
+
+    if (cmd === "fakekick") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`👢 ${alvo} foi expulso do servidor!\n\nOu quase 😹`);
+    }
+
+    if (cmd === "prisao" || cmd === "prisão") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém!");
+      saveUsers();
+      return message.reply(`🚔 ${alvo} foi preso por ser perigoso demais.`);
     }
 
     if (cmd === "cancelar") {
       const alvo = message.mentions.users.first();
       if (!alvo) return message.reply("❌ Marque alguém!");
-      return message.reply(`📢 ${alvo} foi cancelado no Twitter por falar besteira.`);
+      saveUsers();
+      return message.reply(`📵 ${alvo} foi oficialmente cancelado no Twitter.`);
     }
 
-    if (cmd === "hackear" || cmd === "hack") {
-      const alvo = message.mentions.users.first() || message.author;
-      return message.reply(`💻 Hackeando ${alvo.username}...\n📂 Encontrado: pasta 'fotos estranhas'\n✅ Hack concluído.`);
+    if (cmd === "saldo" || cmd === "money" || cmd === "bal" || cmd === "dinheiro") {
+      saveUsers();
+      return message.reply(`💰 ${message.author}, você tem **${user.money} moedas**.\n🏦 Banco: **${user.bank} moedas**`);
     }
 
-    if (cmd === "stalk") {
-      const alvo = message.mentions.users.first() || message.author;
-      return message.reply(`🕵️ Investigando ${alvo.username}...\n📱 Última atividade: online até demais.`);
+    if (cmd === "daily") {
+      const cooldown = 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.daily < cooldown) {
+        return message.reply(`⏳ Volte em **${formatTime(cooldown - (now - user.daily))}** para pegar seu daily.`);
+      }
+      const reward = rewardWithBoost(user, randomMoney(900, 1800));
+      user.money += reward;
+      user.daily = now;
+      saveUsers();
+      return message.reply(`🎁 Você pegou seu **daily** e ganhou **${reward} moedas**!`);
     }
 
-    if (cmd === "roubarcalcinha") {
+    if (cmd === "dailyvip" || cmd === "resgatarvip") {
+      const cooldown = 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      if (!user.vip && !user.inventory.includes("vip de pobre")) return message.reply("❌ Você não tem VIP.");
+      if (!user.dailyvip) user.dailyvip = 0;
+      if (now - user.dailyvip < cooldown) {
+        return message.reply(`⏳ Seu daily VIP volta em **${formatTime(cooldown - (now - user.dailyvip))}**.`);
+      }
+      const reward = rewardWithBoost(user, randomMoney(2500, 5000));
+      user.money += reward;
+      user.dailyvip = now;
+      saveUsers();
+      return message.reply(`👑 Daily VIP resgatado! Você ganhou **${reward} moedas**.`);
+    }
+
+    if (cmd === "work" || cmd === "trabalhar" || cmd === "trabalhador" || cmd === "emprego") {
+      const cooldown = 5 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.work < cooldown) {
+        return message.reply(`⏳ Você já trabalhou. Volte em **${formatTime(cooldown - (now - user.work))}**.`);
+      }
+      const jobs = [
+        "programou um bot quebrado",
+        "vendeu água no semáforo",
+        "farmou no Minecraft",
+        "lavou pratos no restaurante",
+        "hackeou uma calculadora",
+        "trabalhou no mercado",
+        "editou vídeo por 8 horas",
+        "virou CLT de servidor do Discord",
+        "consertou um PC com fita isolante",
+        "ajudou uma capivara a abrir uma empresa"
+      ];
+      const reward = rewardWithBoost(user, randomMoney(350, 1100));
+      user.money += reward;
+      user.work = now;
+      saveUsers();
+      return message.reply(`🛠️ Você **${jobs[randomMoney(0, jobs.length - 1)]}** e ganhou **${reward} moedas**.`);
+    }
+
+    if (cmd === "beg" || cmd === "pedir") {
+      const cooldown = 2 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.beg < cooldown) {
+        return message.reply(`⏳ Calma aí mendigo, volta em **${formatTime(cooldown - (now - user.beg))}**.`);
+      }
+      user.beg = now;
+      if (Math.random() < 0.68) {
+        const reward = rewardWithBoost(user, randomMoney(70, 250));
+        user.money += reward;
+        saveUsers();
+        return message.reply(`💵 Um desconhecido te deu **${reward} moedas** por pena!`);
+      } else {
+        saveUsers();
+        return message.reply("😤 Ninguém te deu nada, seu mendigo!");
+      }
+    }
+
+    if (cmd === "crime") {
+      const cooldown = 4 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.crime < cooldown) {
+        return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.crime))}** para cometer outro crime.`);
+      }
+      user.crime = now;
+      if (Math.random() < 0.62) {
+        const crimes = [
+          "roubou um caixa eletrônico",
+          "furtou um miojo premium",
+          "hackeou o caixa da padaria",
+          "vendeu NFT de capivara",
+          "assaltou um caminhão de pão",
+          "clonou o cartão do padeiro",
+          "vendeu curso de como vender curso"
+        ];
+        const reward = rewardWithBoost(user, randomMoney(500, 1500));
+        user.money += reward;
+        saveUsers();
+        return message.reply(`🕶️ Você **${crimes[randomMoney(0, crimes.length - 1)]}** e ganhou **${reward} moedas** sem ser pego.`);
+      } else {
+        const loss = randomMoney(250, 900);
+        user.money = Math.max(0, user.money - loss);
+        saveUsers();
+        return message.reply(`🚨 A polícia te pegou! Você perdeu **${loss} moedas**.`);
+      }
+    }
+
+    if (cmd === "apostar" || cmd === "aposta" || cmd === "bet" || cmd === "cassino") {
+      const valor = parseInt(args[0]);
+      if (!valor || valor <= 0) return message.reply("❌ Use: `!apostar valor`");
+      if (user.money < valor) return message.reply("❌ Você não tem dinheiro suficiente.");
+      if (Math.random() < 0.48) {
+        user.money += valor;
+        user.wins += 1;
+        saveUsers();
+        return message.reply(`🎰 Você apostou **${valor}** e **DOBROU**! Agora ganhou **${valor} moedas**.`);
+      } else {
+        user.money -= valor;
+        user.losses += 1;
+        saveUsers();
+        return message.reply(`💀 Você perdeu a aposta e foi de arrasta com **${valor} moedas**.`);
+      }
+    }
+
+    if (cmd === "blackjack") {
+      const valor = parseInt(args[0]) || 500;
+      if (valor <= 0) return message.reply("❌ Valor inválido.");
+      if (user.money < valor) return message.reply("❌ Você não tem moedas suficientes.");
+      const player = randomMoney(15, 23);
+      const dealer = randomMoney(15, 23);
+      let result = `🃏 Você tirou **${player}**\n🤖 Dealer tirou **${dealer}**\n\n`;
+      if ((player > dealer && player <= 21) || dealer > 21) {
+        user.money += valor;
+        result += `🎉 Você venceu e ganhou **${valor} moedas**!`;
+      } else if (player === dealer) {
+        result += `🤝 Empate. Ninguém ganhou nada.`;
+      } else {
+        user.money -= valor;
+        result += `💀 Você perdeu **${valor} moedas**.`;
+      }
+      saveUsers();
+      return message.reply(result);
+    }
+
+    if (cmd === "assaltar" || cmd === "roubar" || cmd === "roubo" || cmd === "heist") {
       const alvo = message.mentions.users.first();
       if (!alvo) return message.reply("❌ Marque alguém!");
-      return message.reply(`🩲 ${message.author} roubou a calcinha de ${alvo} e saiu correndo.`);
+      if (alvo.id === message.author.id) return message.reply("💀 Impossível assaltar a si mesmo.");
+      const alvoData = getUser(alvo.id);
+      if (alvoData.money <= 0) return message.reply("❌ Essa pessoa está lisa.");
+      if (Math.random() < 0.45) {
+        const roubado = Math.min(alvoData.money, randomMoney(100, 900));
+        alvoData.money -= roubado;
+        user.money += roubado;
+        saveUsers();
+        return message.reply(`🕵️‍♂️ Você roubou **${roubado} moedas** de ${alvo}! 🤫`);
+      } else {
+        const loss = randomMoney(100, 700);
+        user.money = Math.max(0, user.money - loss);
+        saveUsers();
+        return message.reply(`🚨 Pegaram você no roubo! -**${loss} moedas** 😭`);
+      }
     }
 
-    if (cmd === "fome") {
-      return message.reply("🍔 Você está com fome. Vá usar `!comer`.");
+    if (cmd === "roubarbanco" || cmd === "assaltarbanco") {
+      if (Math.random() < 0.2) {
+        const reward = rewardWithBoost(user, randomMoney(4000, 12000));
+        user.money += reward;
+        saveUsers();
+        return message.reply(`🏦💥 Você explodiu o banco e fugiu com **${reward} moedas**!`);
+      } else {
+        const loss = randomMoney(800, 3000);
+        user.money = Math.max(0, user.money - loss);
+        saveUsers();
+        return message.reply(`🚔 Você tentou assaltar o banco e tomou bala de borracha. Perdeu **${loss} moedas**.`);
+      }
     }
 
-    if (cmd === "comer") {
-      const comidas = ["🍕 pizza", "🍔 hambúrguer", "🌭 cachorro-quente", "🍣 sushi", "🍜 lámen", "🍟 batata frita"];
-      const comida = comidas[Math.floor(Math.random() * comidas.length)];
-      return message.reply(`😋 Você comeu ${comida}.`);
+    if (cmd === "doar" || cmd === "gift" || cmd === "transferir") {
+      const alvo = message.mentions.users.first();
+      const valor = parseInt(args.find(a => !isNaN(a)));
+      if (!alvo || !valor || valor <= 0) return message.reply("❌ Use: `!doar @user valor`");
+      if (alvo.id === message.author.id) return message.reply("💀 Você não pode doar para si mesmo.");
+      if (user.money < valor) return message.reply("❌ Dinheiro insuficiente!");
+      getUser(alvo.id).money += valor;
+      user.money -= valor;
+      saveUsers();
+      return message.reply(`💸 ${message.author} doou **${valor} moedas** para ${alvo}!`);
     }
 
-    if (cmd === "dormir" || cmd === "sleep") {
-      return message.reply("😴 Você dormiu e recuperou suas energias.");
+    if (cmd === "pescar") {
+      const cooldown = 1 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.fish < cooldown) {
+        return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.fish))}** para pescar de novo.`);
+      }
+      user.fish = now;
+      const peixes = [
+        { nome: "tilápia de respeito", valor: [300, 700] },
+        { nome: "bagre ancião", valor: [500, 1000] },
+        { nome: "peixe radioativo", valor: [900, 1800] },
+        { nome: "sardinha premium", valor: [250, 550] },
+        { nome: "tubarão de quintal", valor: [1500, 2800] }
+      ];
+      const peixe = peixes[randomMoney(0, peixes.length - 1)];
+      const reward = rewardWithBoost(user, randomMoney(peixe.valor[0], peixe.valor[1]));
+      user.money += reward;
+      user.collection.push(peixe.nome);
+      saveUsers();
+      return message.reply(`🎣 Você pescou **${peixe.nome}** e vendeu por **${reward} moedas**!`);
     }
 
-    if (cmd === "chorar") {
-      return message.reply("😭 Você chorou no banho ouvindo música triste.");
+    if (cmd === "minerar") {
+      const cooldown = 3 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.mine < cooldown) {
+        return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.mine))}** para minerar de novo.`);
+      }
+      user.mine = now;
+      const drops = [
+        { nome: "carvão triste", valor: [200, 450] },
+        { nome: "ferro nervoso", valor: [500, 900] },
+        { nome: "ouro suspeito", valor: [900, 1600] },
+        { nome: "diamante do paraguai", valor: [1300, 2600] },
+        { nome: "pedra brilhante aleatória", valor: [700, 1400] }
+      ];
+      const drop = drops[randomMoney(0, drops.length - 1)];
+      const reward = rewardWithBoost(user, randomMoney(drop.valor[0], drop.valor[1]));
+      user.money += reward;
+      user.collection.push(drop.nome);
+      saveUsers();
+      return message.reply(`⛏️ Você minerou **${drop.nome}** e conseguiu **${reward} moedas**.`);
     }
 
-    if (cmd === "dancar" || cmd === "dançar") {
-      return message.reply("🕺 Você mandou um passinho proibido.");
+    if (cmd === "caçar") {
+      const cooldown = 5 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.hunt < cooldown) {
+        return message.reply(`⏳ Você precisa esperar **${formatTime(cooldown - (now - user.hunt))}** para caçar de novo.`);
+      }
+      user.hunt = now;
+      const animais = [
+        { nome: "galinha nervosa", valor: [250, 600] },
+        { nome: "javali do caos", valor: [700, 1400] },
+        { nome: "capivara blindada", valor: [1200, 2500] },
+        { nome: "pombo raro", valor: [300, 700] },
+        { nome: "dragão de quintal", valor: [1800, 3200] }
+      ];
+      const animal = animais[randomMoney(0, animais.length - 1)];
+      const reward = rewardWithBoost(user, randomMoney(animal.valor[0], animal.valor[1]));
+      user.money += reward;
+      user.collection.push(animal.nome);
+      saveUsers();
+      return message.reply(`🏹 Você caçou **${animal.nome}** e faturou **${reward} moedas**.`);
     }
 
-    if (cmd === "cantar" || cmd === "sing") {
-      return message.reply("🎤 Você cantou tão mal que o bot quase crashou.");
+    if (cmd === "farmar" || cmd === "coletar") {
+      const cooldown = 4 * 60 * 1000;
+      const now = Date.now();
+      if (now - user.farm < cooldown) {
+        return message.reply(`⏳ Sua fazenda ainda está crescendo. Volte em **${formatTime(cooldown - (now - user.farm))}**.`);
+      }
+      user.farm = now;
+      const colheitas = [
+        { nome: "batata premium", valor: [250, 500] },
+        { nome: "milho turbo", valor: [500, 950] },
+        { nome: "abóbora radioativa", valor: [900, 1700] },
+        { nome: "cenoura sigma", valor: [700, 1200] },
+        { nome: "alface lendária", valor: [1000, 1900] }
+      ];
+      const colheita = colheitas[randomMoney(0, colheitas.length - 1)];
+      const reward = rewardWithBoost(user, randomMoney(colheita.valor[0], colheita.valor[1]));
+      user.money += reward;
+      user.collection.push(colheita.nome);
+      saveUsers();
+      return message.reply(`🌾 Você colheu **${colheita.nome}** e vendeu por **${reward} moedas**.`);
     }
 
-    if (cmd === "gritar") {
-      return message.reply("🗣️ AAAAAAAAAAAAAAAAAAAAAAA");
+    if (cmd === "empresa") {
+      const acao = args[0]?.toLowerCase();
+      if (!acao) {
+        saveUsers();
+        return message.reply(`🏢 Sua empresa está no **nível ${user.companyLevel}**.\n💰 Caixa da empresa: **${user.companyMoney} moedas**\n\nUse:\n\`!empresa criar\`\n\`!empresa coletar\`\n\`!empresa sacar\`\n\`!empresa upar\``);
+      }
+
+      if (acao === "criar") {
+        if (user.companyLevel > 0) return message.reply("❌ Você já tem uma empresa.");
+        if (user.money < 10000) return message.reply("❌ Você precisa de **10000 moedas** para abrir uma empresa.");
+        user.money -= 10000;
+        user.companyLevel = 1;
+        user.companyMoney = 0;
+        saveUsers();
+        return message.reply("🏢 Você abriu sua primeira empresa! Agora você é oficialmente um CLT de si mesmo.");
+      }
+
+      if (acao === "coletar") {
+        if (user.companyLevel <= 0) return message.reply("❌ Você ainda não tem empresa.");
+        const cooldown = 60 * 1000;
+        const now = Date.now();
+        if (!user.lastCompanyCollect) user.lastCompanyCollect = 0;
+        if (now - user.lastCompanyCollect < cooldown) {
+          return message.reply(`⏳ Sua empresa ainda está trabalhando. Volte em **${formatTime(cooldown - (now - user.lastCompanyCollect))}**.`);
+        }
+        const lucro = rewardWithBoost(user, randomMoney(1200, 30000) * user.companyLevel);
+        user.companyMoney += lucro;
+        user.lastCompanyCollect = now;
+        saveUsers();
+        return message.reply(`📈 Sua empresa gerou **${lucro} moedas** de lucro!`);
+      }
+
+      if (acao === "sacar") {
+        if (user.companyMoney <= 0) return message.reply("❌ Sua empresa está lisa.");
+        user.money += user.companyMoney;
+        const valor = user.companyMoney;
+        user.companyMoney = 0;
+        saveUsers();
+        return message.reply(`💸 Você sacou **${valor} moedas** da empresa.`);
+      }
+
+      if (acao === "upar") {
+        const custo = user.companyLevel * 15000;
+        if (user.companyLevel <= 0) return message.reply("❌ Você precisa criar uma empresa primeiro.");
+        if (user.money < custo) return message.reply(`❌ Você precisa de **${custo} moedas** para upar sua empresa.`);
+        user.money -= custo;
+        user.companyLevel += 1;
+        saveUsers();
+        return message.reply(`🚀 Sua empresa subiu para o **nível ${user.companyLevel}**!`);
+      }
     }
 
-    if (cmd === "rir") {
-      return message.reply("😂 KKKKKKKKKKKKKKKKKKKKKKK");
+    if (cmd === "pet") {
+      const acao = args[0]?.toLowerCase();
+      if (!acao) {
+        const lista = Object.entries(petsData)
+          .map(([nome, pet]) => `**${nome}** — 💰 ${pet.price}\n> Boost: **x${pet.boost}**\n> ${pet.desc}`)
+          .join("\n\n");
+        return message.channel.send({ embeds: [createEmbed("🐾 Loja de Pets", lista, "Aqua")] });
+      }
+
+      if (acao === "comprar") {
+        const nome = args.slice(1).join(" ").toLowerCase();
+        if (!petsData[nome]) return message.reply("❌ Pet não encontrado.");
+        if (user.money < petsData[nome].price) return message.reply("❌ Você não tem dinheiro suficiente.");
+        user.money -= petsData[nome].price;
+        user.pets.push(nome);
+        saveUsers();
+        return message.reply(`🐾 Você comprou o pet **${nome}**! Agora seus ganhos estão melhores.`);
+      }
+
+      if (acao === "lista") {
+        if (!user.pets.length) return message.reply("❌ Você não tem pets.");
+        saveUsers();
+        return message.reply(`🐶 Seus pets:\n${user.pets.map(p => `• **${p}**`).join("\n")}\n\n📈 Boost total: **x${getPetBoost(user).toFixed(2)}**`);
+      }
+    }
+
+    if (cmd === "caixa" || cmd === "caixacomum" || cmd === "caixarara" || cmd === "caixalendaria") {
+      let tipo = "comum";
+      let preco = 1500;
+      if (cmd === "caixarara") { tipo = "rara"; preco = 5000; }
+      if (cmd === "caixalendaria") { tipo = "lendaria"; preco = 12000; }
+      if (cmd === "caixa" && args[0]) {
+        const a = args[0].toLowerCase();
+        if (a === "rara") { tipo = "rara"; preco = 5000; }
+        if (a === "lendaria") { tipo = "lendaria"; preco = 12000; }
+      }
+      if (user.money < preco) return message.reply(`❌ Você precisa de **${preco} moedas** para comprar uma caixa ${tipo}.`);
+      user.money -= preco;
+      user.boxes.push(tipo);
+      saveUsers();
+      return message.reply(`📦 Você comprou uma **caixa ${tipo}**! Use \`!abrir ${tipo}\`.`);
+    }
+
+    if (cmd === "abrir") {
+      const tipo = args[0]?.toLowerCase() || "comum";
+      const index = user.boxes.indexOf(tipo);
+      if (index === -1) return message.reply(`❌ Você não tem uma caixa **${tipo}**.`);
+      user.boxes.splice(index, 1);
+
+      const comum = ["ar de pote", "miolo de pão", "cafe", "pote de lágrimas", "fone estourado"];
+      const rara = ["mouse lendário", "teclado quebrado", "cueca da sorte", "caneca do caos", "pão com wifi"];
+      const lendaria = ["pc gamer", "monitor 360hz", "galinha suprema", "air fryer mística", "óculos do sigma"];
+
+      let pool = comum;
+      let bonus = [300, 1000];
+      if (tipo === "rara") {
+        pool = rara;
+        bonus = [1500, 4500];
+      }
+      if (tipo === "lendaria") {
+        pool = lendaria;
+        bonus = [5000, 15000];
+      }
+
+      const item = pool[randomMoney(0, pool.length - 1)];
+      const moneyBonus = randomMoney(bonus[0], bonus[1]);
+      user.inventory.push(item);
+      user.money += moneyBonus;
+      saveUsers();
+      return message.reply(`🎁 Você abriu uma **caixa ${tipo}** e ganhou:\n• **${item}**\n• **${moneyBonus} moedas**`);
+    }
+
+    if (cmd === "loja") {
+      const itens = Object.entries(loja).map(([nome, item]) => `**${nome}** — 💰 ${item.price}\n> ${item.desc}`).join("\n\n");
+      return message.channel.send({ embeds: [createEmbed("🛒 Loja ULTRA", itens, "Blue")] });
+    }
+
+    if (cmd === "comprar") {
+      const nome = args.join(" ").toLowerCase();
+      if (!nome) return message.reply("❌ Use: `!comprar nome do item`");
+      const item = loja[nome];
+      if (!item) return message.reply("❌ Item não encontrado na loja.");
+      if (user.money < item.price) return message.reply("❌ Dinheiro insuficiente.");
+      user.money -= item.price;
+      user.inventory.push(nome);
+      if (nome === "vip de pobre") user.vip = true;
+      saveUsers();
+      return message.reply(`🛍️ Você comprou **${nome}** por **${item.price} moedas**.`);
+    }
+
+    if (cmd === "vender" || cmd === "mercado") {
+      const nome = args.join(" ").toLowerCase();
+      if (!nome) {
+        if (!user.inventory.length) return message.reply("❌ Seu inventário está vazio.");
+        const count = {};
+        for (const item of user.inventory) count[item] = (count[item] || 0) + 1;
+        const texto = Object.entries(count).map(([item, qtd]) => `• **${item}** x${qtd}`).join("\n");
+        return message.channel.send({ embeds: [createEmbed("🏪 Mercado / Seu Inventário", `${texto}\n\nUse \`!vender nome do item\``, "Orange")] });
+      }
+      const index = user.inventory.indexOf(nome);
+      if (index === -1) return message.reply("❌ Você não tem esse item.");
+      user.inventory.splice(index, 1);
+      const valor = loja[nome] ? Math.floor(loja[nome].price * 0.55) : randomMoney(200, 1000);
+      user.money += valor;
+      saveUsers();
+      return message.reply(`💸 Você vendeu **${nome}** por **${valor} moedas**.`);
+    }
+
+    if (cmd === "inventario" || cmd === "inv") {
+      if (!user.inventory.length) return message.reply("🎒 Seu inventário está vazio.");
+      const count = {};
+      for (const item of user.inventory) count[item] = (count[item] || 0) + 1;
+      const texto = Object.entries(count).map(([item, qtd]) => `• **${item}** x${qtd}`).join("\n");
+      return message.channel.send({ embeds: [createEmbed(`🎒 Inventário de ${message.author.username}`, texto, "Purple")] });
+    }
+
+    if (cmd === "usar") {
+      const nome = args.join(" ").toLowerCase();
+      if (!nome) return message.reply("❌ Use: `!usar nome do item`");
+      const index = user.inventory.indexOf(nome);
+      if (index === -1) return message.reply("❌ Você não tem esse item.");
+      user.inventory.splice(index, 1);
+      const item = loja[nome];
+      if (nome === "cafe") user.xp += 15;
+      if (nome === "miojo sagrado") user.money += 200;
+      if (nome === "lingote") user.money += 700;
+      if (nome === "pizza") user.money += 150;
+      if (nome === "vip de pobre") user.vip = true;
+      if (nome === "cueca da sorte") user.money += randomMoney(500, 2000);
+      if (nome === "pc gamer") user.xp += 100;
+      saveUsers();
+      return message.reply(item?.use || `✨ Você usou **${nome}**.`);
+    }
+
+    if (cmd === "craft") {
+      const craftName = args.join(" ").toLowerCase();
+      const recipes = {
+        "pc dos deuses": {
+          need: ["pc gamer", "monitor 360hz", "mouse lendário", "teclado quebrado"],
+          reward: "pc dos deuses"
+        },
+        "kit sigma": {
+          need: ["óculos do sigma", "cueca da sorte", "caneca do caos"],
+          reward: "kit sigma"
+        },
+        "lanche nuclear": {
+          need: ["pizza", "miojo sagrado", "sanduiche radioativo"],
+          reward: "lanche nuclear"
+        }
+      };
+
+      if (!craftName || !recipes[craftName]) {
+        return message.reply("❌ Crafts disponíveis:\n• `!craft pc dos deuses`\n• `!craft kit sigma`\n• `!craft lanche nuclear`");
+      }
+
+      const recipe = recipes[craftName];
+      for (const item of recipe.need) {
+        if (!user.inventory.includes(item)) return message.reply(`❌ Você precisa de **${item}**.`);
+      }
+
+      for (const item of recipe.need) {
+        const i = user.inventory.indexOf(item);
+        if (i !== -1) user.inventory.splice(i, 1);
+      }
+
+      user.inventory.push(recipe.reward);
+      saveUsers();
+      return message.reply(`🛠️ Craft concluído! Você criou **${recipe.reward}**.`);
+    }
+
+    if (cmd === "investir") {
+      const valor = parseInt(args[0]);
+      if (!valor || valor <= 0) return message.reply("❌ Use: `!investir valor`");
+      if (user.money < valor) return message.reply("❌ Você não tem esse valor.");
+      user.money -= valor;
+      user.investments += valor;
+      user.investedAt = Date.now();
+      saveUsers();
+      return message.reply(`📈 Você investiu **${valor} moedas**. Use \`!resgatar\` depois.`);
+    }
+
+    if (cmd === "resgatar") {
+      if (!user.investments || user.investments <= 0) return message.reply("❌ Você não tem investimento ativo.");
+      const tempo = Date.now() - user.investedAt;
+      if (tempo < 2 * 60 * 60 * 1000) {
+        return message.reply(`⏳ Seu investimento ainda está rendendo. Volte em **${formatTime((2 * 60 * 60 * 1000) - tempo)}**.`);
+      }
+      const lucro = Math.floor(user.investments * (1 + (Math.random() * 0.45 + 0.1)));
+      user.money += lucro;
+      user.investments = 0;
+      user.investedAt = 0;
+      saveUsers();
+      return message.reply(`💹 Você resgatou seu investimento e recebeu **${lucro} moedas**!`);
+    }
+
+    if (cmd === "perfil") {
+      const alvo = message.mentions.users.first() || message.author;
+      const data = getUser(alvo.id);
+      const parceiro = data.marriedTo ? `<@${data.marriedTo}>` : "Ninguém";
+      return message.channel.send({
+        embeds: [
+          createEmbed(
+            `📋 Perfil de ${alvo.username}`,
+            `💰 **Dinheiro:** ${data.money}
+🏦 **Banco:** ${data.bank}
+⭐ **Nível:** ${data.level}
+🧠 **XP:** ${data.xp}/${data.level * 100}
+💬 **Mensagens:** ${data.messages}
+💋 **Beijos:** ${data.kisses}
+👋 **Tapas:** ${data.slaps}
+🏆 **Vitórias:** ${data.wins}
+💀 **Derrotas:** ${data.losses}
+💍 **Casado com:** ${parceiro}
+🎒 **Itens:** ${data.inventory.length}
+🐾 **Pets:** ${data.pets.length}
+🏢 **Empresa:** Nível ${data.companyLevel}`,
+            "Aqua"
+          ).setThumbnail(alvo.displayAvatarURL({ dynamic: true }))
+        ]
+      });
+    }
+
+    if (cmd === "rankmoney") {
+      const ranking = Object.entries(users)
+        .sort((a, b) => (b[1].money + (b[1].bank || 0)) - (a[1].money + (a[1].bank || 0)))
+        .slice(0, 10)
+        .map(([id, data], i) => `**${i + 1}.** <@${id}> — 💰 ${(data.money || 0) + (data.bank || 0)} moedas`)
+        .join("\n");
+      return message.channel.send({ embeds: [createEmbed("🏆 Ranking de Dinheiro", ranking || "Sem dados ainda.", "Gold")] });
+    }
+
+    if (cmd === "ranklevel") {
+      const ranking = Object.entries(users)
+        .sort((a, b) => (b[1].level || 1) - (a[1].level || 1) || (b[1].xp || 0) - (a[1].xp || 0))
+        .slice(0, 10)
+        .map(([id, data], i) => `**${i + 1}.** <@${id}> — ⭐ Nível ${data.level || 1} (**${data.xp || 0} XP**)`)
+        .join("\n");
+      return message.channel.send({ embeds: [createEmbed("📈 Ranking de Nível", ranking || "Sem dados ainda.", "Blue")] });
+    }
+
+    if (cmd === "rankmsg") {
+      const ranking = Object.entries(users)
+        .sort((a, b) => (b[1].messages || 0) - (a[1].messages || 0))
+        .slice(0, 10)
+        .map(([id, data], i) => `**${i + 1}.** <@${id}> — 💬 ${data.messages || 0} mensagens`)
+        .join("\n");
+      return message.channel.send({ embeds: [createEmbed("💬 Ranking de Mensagens", ranking || "Sem dados ainda.", "Purple")] });
+    }
+
+    if (cmd === "colecao" || cmd === "collection" || cmd === "coleção") {
+      if (!user.collection.length) return message.reply("📦 Sua coleção está vazia.");
+      const count = {};
+      for (const item of user.collection) count[item] = (count[item] || 0) + 1;
+      const texto = Object.entries(count).map(([item, qtd]) => `• **${item}** x${qtd}`).join("\n");
+      return message.channel.send({ embeds: [createEmbed(`🗂️ Coleção de ${message.author.username}`, texto, "Aqua")] });
+    }
+
+    if (cmd === "battlepass" || cmd === "bp" || cmd === "pass") {
+      const rewards = [
+        { level: 3, reward: "500 moedas" },
+        { level: 5, reward: "caixa comum" },
+        { level: 8, reward: "1000 moedas" },
+        { level: 10, reward: "pet aleatório" },
+        { level: 15, reward: "caixa rara" },
+        { level: 20, reward: "vip de pobre" }
+      ];
+      const texto = rewards.map(r => {
+        const ok = user.level >= r.level ? "✅" : "❌";
+        return `${ok} **Nível ${r.level}** — ${r.reward}`;
+      }).join("\n");
+      return message.channel.send({
+        embeds: [createEmbed("🎟️ Battle Pass", `⭐ Seu nível: **${user.level}**\n\n${texto}`, "Green")]
+      });
+    }
+
+    if (cmd === "resgatarbp") {
+      if (!user.bpClaimed) user.bpClaimed = [];
+      const rewards = [
+        { level: 3, reward: () => { user.money += 500; return "500 moedas"; } },
+        { level: 5, reward: () => { user.boxes.push("comum"); return "caixa comum"; } },
+        { level: 8, reward: () => { user.money += 1000; return "1000 moedas"; } },
+        { level: 10, reward: () => {
+          const nomes = Object.keys(petsData);
+          const pet = nomes[randomMoney(0, nomes.length - 1)];
+          user.pets.push(pet);
+          return `pet **${pet}**`;
+        }},
+        { level: 15, reward: () => { user.boxes.push("rara"); return "caixa rara"; } },
+        { level: 20, reward: () => { user.inventory.push("vip de pobre"); user.vip = true; return "vip de pobre"; } }
+      ];
+
+      const disponiveis = rewards.filter(r => user.level >= r.level && !user.bpClaimed.includes(r.level));
+      if (!disponiveis.length) return message.reply("❌ Você não tem recompensas do Battle Pass para resgatar.");
+
+      const ganhos = [];
+      for (const r of disponiveis) {
+        ganhos.push(`• ${r.reward()}`);
+        user.bpClaimed.push(r.level);
+      }
+
+      saveUsers();
+      return message.reply(`🎁 Você resgatou suas recompensas do Battle Pass:\n${ganhos.join("\n")}`);
+    }
+
+    if (cmd === "duelo") {
+      const alvo = message.mentions.users.first();
+      if (!alvo) return message.reply("❌ Marque alguém para duelar.");
+      if (alvo.id === message.author.id) return message.reply("💀 Você não pode duelar com você mesmo.");
+      const alvoData = getUser(alvo.id);
+      const aposta = parseInt(args.find(a => !isNaN(a))) || 500;
+      if (user.money < aposta) return message.reply("❌ Você não tem dinheiro suficiente.");
+      if (alvoData.money < aposta) return message.reply("❌ O alvo não tem dinheiro suficiente.");
+      const p1 = randomMoney(1, 100) + user.level * 2;
+      const p2 = randomMoney(1, 100) + alvoData.level * 2;
+      if (p1 === p2) return message.reply(`⚔️ Duelo entre ${message.author} e ${alvo} terminou em **EMPATE**!`);
+      if (p1 > p2) {
+        user.money += aposta;
+        alvoData.money -= aposta;
+        saveUsers();
+        return message.reply(`⚔️ ${message.author} venceu o duelo contra ${alvo} e ganhou **${aposta} moedas**!`);
+      } else {
+        user.money -= aposta;
+        alvoData.money += aposta;
+        saveUsers();
+        return message.reply(`⚔️ ${alvo} venceu o duelo contra ${message.author}. Você perdeu **${aposta} moedas**.`);
+      }
+    }
+
+    if (cmd === "boss") {
+      const bosses = [
+        { nome: "Capivara do Apocalipse", hp: 120, reward: [2500, 5000] },
+        { nome: "CLT Supremo", hp: 150, reward: [3000, 6000] },
+        { nome: "Pombo Radioativo", hp: 100, reward: [2000, 4500] },
+        { nome: "Miojo Ancestral", hp: 180, reward: [4000, 8000] },
+        { nome: "Air Fryer Demoníaca", hp: 220, reward: [5000, 10000] }
+      ];
+      const boss = bosses[randomMoney(0, bosses.length - 1)];
+      const playerPower = randomMoney(40, 160) + user.level * 5 + user.pets.length * 10;
+      if (playerPower >= boss.hp) {
+        const reward = rewardWithBoost(user, randomMoney(boss.reward[0], boss.reward[1]));
+        user.money += reward;
+        user.collection.push(boss.nome);
+        saveUsers();
+        return message.reply(`👹 Você derrotou o boss **${boss.nome}**!\n💰 Recompensa: **${reward} moedas**`);
+      } else {
+        const loss = randomMoney(300, 1200);
+        user.money = Math.max(0, user.money - loss);
+        saveUsers();
+        return message.reply(`💀 O boss **${boss.nome}** te espancou.\nVocê perdeu **${loss} moedas**.`);
+      }
+    }
+
+    if (cmd === "npc") {
+      const npcs = [
+        "🧓 Um velho disse: 'não confie em quem vende curso de ficar rico'",
+        "🐸 Um sapo místico te entregou um conselho inútil",
+        "🧙 Um mago do Discord disse que seu destino é virar ADM",
+        "🐹 Uma capivara falou que você precisa farmar mais",
+        "🤓 Um programador disse: 'faltou ponto e vírgula aí'"
+      ];
+      return message.reply(npcs[randomMoney(0, npcs.length - 1)]);
+    }
+
+    if (cmd === "loteria") {
+      const custo = 1000;
+      if (user.money < custo) return message.reply("❌ Você precisa de **1000 moedas** para jogar na loteria.");
+      user.money -= custo;
+      const num = randomMoney(1, 1000);
+      if (num === 777) {
+        const premio = 100000;
+        user.money += premio;
+        saveUsers();
+        return message.reply(`🎉🎉🎉 VOCÊ ACERTOU A LOTERIA!!! Ganhou **${premio} moedas**!!!`);
+      } else if (num >= 990) {
+        const premio = randomMoney(5000, 15000);
+        user.money += premio;
+        saveUsers();
+        return message.reply(`🍀 Quase impossível! Você ganhou **${premio} moedas** na loteria.`);
+      } else {
+        saveUsers();
+        return message.reply(`🎫 Seu número foi **${num}**... não foi dessa vez 😭`);
+      }
+    }
+
+    if (cmd === "sorteio" || cmd === "raffle") {
+      const premio = args.join(" ") || "1 capivara usada";
+      const membros = message.guild.members.cache.filter(m => !m.user.bot).map(m => m.user);
+      if (!membros.length) return message.reply("❌ Não há participantes suficientes.");
+      const vencedor = membros[randomMoney(0, membros.length - 1)];
+      return message.channel.send({ embeds: [createEmbed("🎉 SORTEIO", `🏆 Prêmio: **${premio}**\n🎊 Vencedor: ${vencedor}`, "Gold")] });
+    }
+
+    if (cmd === "evento") {
+      const eventos = [
+        { nome: "💸 Chuva de Dinheiro", reward: [500, 2000] },
+        { nome: "👹 Invasão de Boss", reward: [1000, 3500] },
+        { nome: "🎁 Evento Misterioso", reward: [800, 2500] },
+        { nome: "🐟 Festival da Pesca", reward: [700, 2200] },
+        { nome: "⛏️ Noite da Mineração", reward: [900, 2800] }
+      ];
+      const ev = eventos[randomMoney(0, eventos.length - 1)];
+      const reward = rewardWithBoost(user, randomMoney(ev.reward[0], ev.reward[1]));
+      user.money += reward;
+      saveUsers();
+      return message.reply(`🎊 Evento ativado: **${ev.nome}**\nVocê ganhou **${reward} moedas**!`);
+    }
+
+    if (cmd === "clima" || cmd === "tempo") {
+      const climas = [
+        "☀️ Sol de fritar ovo no asfalto",
+        "🌧️ Chuva nível Minecraft com shader",
+        "⛈️ Tempestade do capeta",
+        "🌪️ Vento de levar telhado",
+        "🌫️ Névoa de filme de terror",
+        "🥵 Calor que derrete o chinelo",
+        "🥶 Frio de pinguim"
+      ];
+      return message.reply(`📡 Previsão do tempo:\n${climas[randomMoney(0, climas.length - 1)]}`);
     }
 
     if (cmd === "meme") {
       const memes = [
-        "😂 O cara estudou 5 minutos e já quer passar em concurso.",
-        "💀 Seu PC roda PowerPoint em 20 FPS.",
-        "🤡 Você abriu a geladeira 7 vezes esperando aparecer comida nova.",
-        "🫠 Você fala 'vou dormir cedo' e 3h da manhã tá vendo shorts."
+        "🗿🍷 sigma detected",
+        "💀 essa foi de arrasta",
+        "🤡 loss total",
+        "🐹 capivara supremacy",
+        "🍞 pão com wifi encontrado",
+        "📉 caiu igual bitcoin em crise"
       ];
-      return message.reply(memes[Math.floor(Math.random() * memes.length)]);
+      return message.reply(memes[randomMoney(0, memes.length - 1)]);
     }
 
-    if (cmd === "piada" || cmd === "joke") {
-      const piadas = [
-        "🤣 O programador foi ao médico porque estava com muitos bugs.",
-        "😂 Qual o café mais perigoso? O ex-presso.",
-        "😆 O que o zero disse para o oito? Belo cinto!",
-        "🤡 Sua vida amorosa."
-      ];
-      return message.reply(piadas[Math.floor(Math.random() * piadas.length)]);
-    }
-
-    if (cmd === "8ball") {
-      const respostas = [
-        "🔮 Sim.",
-        "🔮 Não.",
-        "🔮 Talvez.",
-        "🔮 Com certeza.",
-        "🔮 Melhor não te contar agora.",
-        "🔮 Muito improvável.",
-        "🔮 Absolutamente sim.",
-        "🔮 Acho que não."
-      ];
-      return message.reply(respostas[Math.floor(Math.random() * respostas.length)]);
-    }
-
-    if (cmd === "moeda" || cmd === "coinflip") {
-      const lado = Math.random() < 0.5 ? "🪙 Cara" : "🪙 Coroa";
-      return message.reply(`Resultado: **${lado}**`);
-    }
-
-    if (cmd === "dado" || cmd === "dice") {
-      const numero = Math.floor(Math.random() * 6) + 1;
-      return message.reply(`🎲 Você tirou **${numero}**.`);
-    }
-
-    if (cmd === "ppt" || cmd === "jokenpo") {
-      const jogadas = ["🪨 Pedra", "📄 Papel", "✂️ Tesoura"];
-      const bot = jogadas[Math.floor(Math.random() * jogadas.length)];
-      return message.reply(`🤖 Eu escolhi: **${bot}**`);
-    }
-
-    if (cmd === "roleta") {
-      const coisas = ["💀 MORREU", "💰 ganhou 500 moedas", "🤡 perdeu a dignidade", "😎 sobreviveu", "🚔 foi preso"];
-      return message.reply(`🎰 Resultado: **${coisas[Math.floor(Math.random() * coisas.length)]}**`);
-    }
-
-    if (cmd === "escolher" || cmd === "choose") {
-      const opcoes = args.join(" ").split("|").map(x => x.trim()).filter(Boolean);
-      if (opcoes.length < 2) {
-        return message.reply("❌ Use assim: `!escolher pizza | sushi | hambúrguer`");
-      }
-      const escolha = opcoes[Math.floor(Math.random() * opcoes.length)];
-      return message.reply(`🤔 Eu escolho: **${escolha}**`);
-    }
-
-    if (cmd === "numero" || cmd === "número") {
-      const numero = Math.floor(Math.random() * 100) + 1;
-      return message.reply(`🔢 Seu número aleatório é **${numero}**.`);
-    }
-
-    if (cmd === "sorte") {
+    if (cmd === "xingar") {
+      const alvo = message.mentions.users.first() || message.author;
       const frases = [
-        "🍀 Hoje é seu dia de sorte.",
-        "💀 Melhor nem sair de casa hoje.",
-        "😎 Algo bom vem aí.",
-        "🤡 Hoje você vai passar vergonha.",
-        "💸 Chance alta de ganhar dinheiro."
+        "é um **HDMI sem sinal**",
+        "tem QI de **air fryer desligada**",
+        "é mais perdido que **Wi-Fi de ônibus**",
+        "parece que foi montado com peça da Shopee",
+        "é um verdadeiro **NPC bugado**",
+        "tem a inteligência de um **pão molhado**"
       ];
-      return message.reply(frases[Math.floor(Math.random() * frases.length)]);
+      return message.reply(`🤬 ${alvo} ${frases[randomMoney(0, frases.length - 1)]}`);
     }
 
-    if (cmd === "conselho") {
-      const conselhos = [
-        "🧠 Pare de procrastinar e vai fazer algo útil.",
-        "💧 Bebe água.",
-        "😴 Dorme cedo hoje, sem desculpa.",
-        "📚 Estuda agora pra não sofrer depois.",
-        "💸 Guarda dinheiro, seu eu do futuro agradece."
+    if (cmd === "elogiar") {
+      const alvo = message.mentions.users.first() || message.author;
+      const frases = [
+        "é lindo igual **RTX grátis**",
+        "tem presença de **boss final**",
+        "é mais brabo que **admin corrupto**",
+        "tem aura de **milionário do Discord**",
+        "é oficialmente **sigma premium**",
+        "nasceu para vencer (ou pelo menos tentar)"
       ];
-      return message.reply(conselhos[Math.floor(Math.random() * conselhos.length)]);
+      return message.reply(`😎 ${alvo} ${frases[randomMoney(0, frases.length - 1)]}`);
     }
 
-    // =========================
-    // 🛠️ COMANDOS ÚTEIS / STAFF
-    // =========================
+    if (cmd === "help" || cmd === "ajuda") {
+      return message.channel.send({
+        embeds: [
+          createEmbed(
+            "📖 AJUDA DO BOT ULTRA",
+`**🎉 Diversão**
+\`!ping\` \`!gay\` \`!corno\` \`!bonito\` \`!gostoso\` \`!ship\` \`!rp\` \`!slap\` \`!hug\` \`!kill\` \`!reviver\` \`!virus\` \`!rate\` \`!meme\` \`!xingar\` \`!elogiar\` \`!quem\` \`!8ball\`
 
-    if (cmd === "ping") {
-      return message.reply(`🏓 Pong! Latência: **${client.ws.ping}ms**`);
-    }
+**💸 Economia**
+\`!saldo\` \`!daily\` \`!dailyvip\` \`!work\` \`!crime\` \`!beg\` \`!apostar\` \`!blackjack\` \`!assaltar\` \`!doar\` \`!investir\` \`!resgatar\`
 
-    if (cmd === "avatar") {
-      const alvo = message.mentions.users.first() || message.author;
-      return message.reply(alvo.displayAvatarURL({ dynamic: true, size: 1024 }));
-    }
+**🛒 Loja / Itens**
+\`!loja\` \`!comprar\` \`!inventario\` \`!usar\` \`!vender\` \`!mercado\` \`!craft\`
 
-    if (cmd === "serverinfo") {
-      const embed = createEmbed(
-        `🌍 Informações do servidor`,
-        `**Nome:** ${message.guild.name}
-**Dono:** <@${message.guild.ownerId}>
-**Membros:** ${message.guild.memberCount}
-**Criado em:** <t:${Math.floor(message.guild.createdTimestamp / 1000)}:F>`,
-        "Blue"
-      );
-      return message.reply({ embeds: [embed] });
-    }
+**📦 Loot**
+\`!caixa\` \`!caixarara\` \`!caixalendaria\` \`!abrir\`
 
-    if (cmd === "userinfo") {
-      const alvo = message.mentions.users.first() || message.author;
-      const membro = message.guild.members.cache.get(alvo.id);
+**🐾 Pets**
+\`!pet\` \`!pet comprar nome\` \`!pet lista\`
 
-      const embed = createEmbed(
-        `👤 Informações de ${alvo.username}`,
-        `**Usuário:** ${alvo}
-**ID:** ${alvo.id}
-**Conta criada:** <t:${Math.floor(alvo.createdTimestamp / 1000)}:F>
-**Entrou no servidor:** <t:${Math.floor(membro.joinedTimestamp / 1000)}:F>`,
-        "Blue"
-      );
-      return message.reply({ embeds: [embed] });
-    }
+**🌾 Farm**
+\`!pescar\` \`!minerar\` \`!caçar\` \`!farmar\` \`!colecao\`
 
-    if (cmd === "limpar" || cmd === "clear") {
-      if (!message.member.permissions.has("ManageMessages")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
+**🏢 Empresa**
+\`!empresa\` \`!empresa criar\` \`!empresa coletar\` \`!empresa sacar\` \`!empresa upar\`
 
-      const quantidade = parseInt(args[0]);
-      if (!quantidade || quantidade < 1 || quantidade > 100) {
-        return message.reply("❌ Use: `!limpar 10` (1 a 100)");
-      }
+**⚔️ PvE / PvP**
+\`!duelo\` \`!boss\` \`!npc\`
 
-      await message.channel.bulkDelete(quantidade, true).catch(() => null);
-      return message.channel.send(`🧹 Limpei **${quantidade}** mensagens.`).then(msg => {
-        setTimeout(() => msg.delete().catch(() => null), 3000);
+**🏆 Rankings**
+\`!rankmoney\` \`!ranklevel\` \`!rankmsg\`
+
+**🎟️ Extras**
+\`!battlepass\` \`!bp\` \`!resgatarbp\` \`!loteria\` \`!evento\` \`!sorteio\` \`!clima\` \`!perfil\``,
+            "Green"
+          )
+        ]
       });
     }
-
-    if (cmd === "say" || cmd === "falar") {
-      if (!message.member.permissions.has("ManageMessages")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const texto = args.join(" ");
-      if (!texto) return message.reply("❌ Escreva algo para eu falar.");
-      await message.delete().catch(() => null);
-      return message.channel.send(texto);
-    }
-
-    if (cmd === "anuncio" || cmd === "anúncio" || cmd === "announce") {
-      if (!message.member.permissions.has("ManageGuild")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const texto = args.join(" ");
-      if (!texto) return message.reply("❌ Escreva o anúncio.");
-
-      const embed = createEmbed("📢 Anúncio", texto, "Gold");
-      return message.channel.send({ embeds: [embed] });
-    }
-
-    if (cmd === "ban") {
-      if (!message.member.permissions.has("BanMembers")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const alvo = message.mentions.members.first();
-      if (!alvo) return message.reply("❌ Marque alguém para banir.");
-
-      await alvo.ban({ reason: `Banido por ${message.author.tag}` }).catch(() => null);
-      return message.reply(`🔨 ${alvo.user.tag} foi banido.`);
-    }
-
-    if (cmd === "kick") {
-      if (!message.member.permissions.has("KickMembers")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const alvo = message.mentions.members.first();
-      if (!alvo) return message.reply("❌ Marque alguém para expulsar.");
-
-      await alvo.kick(`Expulso por ${message.author.tag}`).catch(() => null);
-      return message.reply(`👢 ${alvo.user.tag} foi expulso.`);
-    }
-
-    if (cmd === "mute") {
-      if (!message.member.permissions.has("ModerateMembers")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const alvo = message.mentions.members.first();
-      const minutos = parseInt(args[1]) || 10;
-      if (!alvo) return message.reply("❌ Marque alguém para mutar.");
-
-      await alvo.timeout(minutos * 60 * 1000, `Mutado por ${message.author.tag}`).catch(() => null);
-      return message.reply(`🔇 ${alvo.user.tag} foi mutado por **${minutos} min**.`);
-    }
-
-    if (cmd === "unmute") {
-      if (!message.member.permissions.has("ModerateMembers")) {
-        return message.reply("❌ Você não tem permissão.");
-      }
-
-      const alvo = message.mentions.members.first();
-      if (!alvo) return message.reply("❌ Marque alguém para desmutar.");
-
-      await alvo.timeout(null).catch(() => null);
-      return message.reply(`🔊 ${alvo.user.tag} foi desmutado.`);
-    }
-
-    // =========================
-    // ❓ AJUDA / HELP
-    // =========================
-
-    if (cmd === "ajuda" || cmd === "help") {
-      const embed = new EmbedBuilder()
-        .setTitle("📖 Lista COMPLETA de Comandos")
-        .setDescription("Aqui estão **todos os comandos do bot**.")
-        .setColor("Purple")
-        .addFields(
-          {
-            name: "💰 Economia",
-            value:
-`!saldo
-!daily
-!work
-!crime
-!assaltar @user
-!depositar valor
-!sacar valor
-!banco
-!loja
-!comprar item qtd
-!inventario
-!usar item
-!perfil
-!rank
-!topmoney
-!toplevel`
-          },
-          {
-            name: "😂 Zueira / Social",
-            value:
-`!beijar @user
-!tapa @user
-!abraçar @user
-!morder @user
-!atirar @user
-!matar @user
-!reviver @user
-!casar @user
-!divorciar
-!ship @user
-!gay @user
-!corno @user
-!burro @user
-!lindo @user
-!feio @user
-!fofo @user
-!sortudo @user
-!azarado @user
-!gado @user
-!sigma @user
-!cringe @user
-!mito @user
-!cancelar @user
-!hackear @user
-!stalk @user
-!fome
-!comer
-!dormir
-!chorar
-!dancar
-!cantar
-!gritar
-!rir
-!meme
-!piada
-!8ball
-!moeda
-!dado
-!ppt
-!roleta
-!escolher
-!numero
-!sorte
-!conselho`
-          },
-          {
-            name: "🛠️ Utilidade / Staff",
-            value:
-`!ping
-!avatar
-!serverinfo
-!userinfo
-!limpar
-!say
-!anuncio
-!ban
-!kick
-!mute
-!unmute`
-          },
-          {
-            name: "💎 Secreto",
-            value: `!676767`
-          }
-        )
-        .setFooter({ text: "Bot de economia + zoeira + moderação" });
-
-      return message.reply({ embeds: [embed] });
-    }
-
-    // =========================
-    // 💎 COMANDO SECRETO
-    // =========================
-
-    if (cmd === SECRET_COMMAND) {
-      ensureUser(message.author.id);
-      users[message.author.id].money += 50000;
-      saveUsers();
-      return message.reply("💎 Segredo ativado. Você recebeu **50.000 moedas**.");
-    }
-
   });
 };
