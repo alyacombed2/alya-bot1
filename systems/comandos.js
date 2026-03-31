@@ -439,47 +439,32 @@ function rewardWithBoost(user, amount) {
     // Salva antes de enviar
     saveUsers();
     
-    // Cria um ZIP temporário com o economy.json
-    const AdmZip = require('adm-zip');
-    const zip = new AdmZip();
-    
-    // Adiciona o economy.json ao ZIP
-    zip.addLocalFile(dataPath, '', 'economy.json');
-    
-    // Gera o arquivo ZIP temporário
-    const zipPath = path.join(__dirname, '..', 'data', 'economy_backup.zip');
-    zip.writeZip(zipPath);
-    
-    // Estatísticas do arquivo
+    // Lê estatísticas do arquivo
     const stats = fs.statSync(dataPath);
-    const fileSize = (stats.size / 1024).toFixed(2);
+    const fileSizeKB = (stats.size / 1024).toFixed(2);
     const rawData = fs.readFileSync(dataPath, "utf8");
     const parsed = JSON.parse(rawData);
     const totalUsers = Object.keys(parsed).length;
     const totalMoney = Object.values(parsed).reduce((acc, u) => acc + (u.money || 0) + (u.bank || 0), 0);
     
-    // Envia o ZIP como anexo
-    const zipFile = new AttachmentBuilder(zipPath, { name: "economy_backup.zip" });
-    
-    await message.reply({
-      content: `📦 **BACKUP DO ECONOMY.JSON ENVIADO!**\n\n📊 **ESTATÍSTICAS:**
-- **Usuários:** ${totalUsers}
-- **Dinheiro total:** ${totalMoney.toLocaleString()} moedas
-- **Tamanho:** ${fileSize} KB
-- **Arquivo:** \`economy.json\` (dentro do ZIP)`,
-      files: [zipFile]
+    // Envia o economy.json DIRETO como anexo (SEM ZIP)
+    const jsonFile = new AttachmentBuilder(dataPath, { 
+      name: "economy.json",
+      description: "Backup completo da economia"
     });
     
-    // Deleta o ZIP temporário após 5 segundos
-    setTimeout(() => {
-      fs.unlink(zipPath, (err) => {
-        if (err) console.error('Erro ao deletar ZIP temporário:', err);
-      });
-    }, 5000);
-    
+    await message.reply({
+      content: `📦 **BACKUP DO ECONOMY.JSON ENVIADO!**\n\n📊 **ESTATÍSTICAS ATUAIS:**
+- 👥 **Usuários:** ${totalUsers}
+- 💰 **Dinheiro total:** ${totalMoney.toLocaleString()}
+- 📏 **Tamanho:** ${fileSizeKB} KB
+- 🕒 **Atualizado:** ${new Date(stats.mtime).toLocaleString('pt-BR')}`,
+      files: [jsonFile]
+    });
+
   } catch (err) {
-    console.error("❌ Erro ao criar ZIP:", err);
-    return message.reply(`❌ Erro ao criar backup: \`${err.message}\``);
+    console.error("❌ Erro ao enviar economy.json:", err);
+    return message.reply(`❌ Erro: \`${err.message}\``);
   }
 
   return;
