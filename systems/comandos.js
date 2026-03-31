@@ -1119,19 +1119,30 @@ if (cmd === "save") {
     return message.reply("❌ Você não tem pets.");
   }
 
-  const lista = Object.entries(user.pets)
+  // Converte ARRAY para OBJETO se necessário
+  let petsObj = user.pets;
+  if (Array.isArray(user.pets)) {
+    const count = {};
+    for (const pet of user.pets) {
+      count[pet] = (count[pet] || 0) + 1;
+    }
+    petsObj = count;
+  }
+
+  const lista = Object.entries(petsObj)
     .map(([nome, qtd]) => {
       const boost = petsData[nome]?.boost || 1;
-      return `• **${nome}** x${qtd} (**x${boost}** cada)`;
+      return `🐾 **${nome}** x**${qtd}** (x${boost})`;
     })
     .join("\n");
 
+  const totalPets = Object.values(petsObj).reduce((a, b) => a + b, 0);
   saveUsers();
+  
   return message.reply(
-    `🐶 **Seus pets:**\n${lista}\n\n📈 **Boost total:** x${getPetBoost(user).toFixed(2)}`
+    `🐕 **Seus Pets (${totalPets} total):**\n${lista}\n\n📈 **Boost Total:** x${getPetBoost(user).toFixed(2)}`
   );
-}
-    }
+      }
 
     if (cmd === "caixa" || cmd === "caixacomum" || cmd === "caixarara" || cmd === "caixalendaria") {
       let tipo = "comum";
